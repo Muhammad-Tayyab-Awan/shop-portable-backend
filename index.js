@@ -31,7 +31,7 @@ app.listen(PORT, (err) => {
       console.log({ success: false, msg: "Connection Error Occurred" });
     });
   console.log({
-    success: "true",
+    success: true,
     msg: `App running on http://localhost:${PORT}}`
   });
 });
