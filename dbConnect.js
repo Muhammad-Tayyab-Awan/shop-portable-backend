@@ -7,7 +7,7 @@ async function connect() {
 
 async function connectToDatabase() {
   await connect();
-  return { success: "true", msg: "Connected to Database" };
+  return { success: true, msg: "Connected to Database" };
 }
 
 export default connectToDatabase;
