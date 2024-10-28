@@ -1,8 +1,13 @@
-import mongoose from "mongoose";
-const productSchema = new mongoose.Schema({
+import mongoose, { Schema } from "mongoose";
+const productSchema = new Schema({
   pname: {
     type: String,
     unique: true,
+    required: true
+  },
+  imageId: {
+    type: Schema.Types.ObjectId,
+    ref: "productimage",
     required: true
   },
   description: {
