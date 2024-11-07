@@ -3,12 +3,13 @@ import "dotenv/config";
 import bodyParser from "body-parser";
 import connectToDatabase from "./dbConnect.js";
 import productRoute from "./routes/products.js";
+import staffRoute from "./routes/staff.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use("/api/products", productRoute);
-
+app.use("/api/staff", staffRoute);
 app.get("/", (req, res) => {
   res.send({
     success: true,
