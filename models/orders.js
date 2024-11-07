@@ -1,15 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { v4 as uuidv4 } from "uuid";
 const orderSchema = new Schema({
-  product: {
-    type: Schema.Types.ObjectId,
-    ref: "product",
-    required: true
-  },
-  count: {
-    type: Number,
-    required: true
-  },
   status: {
     type: String,
     required: true,
@@ -36,10 +26,10 @@ const orderSchema = new Schema({
     required: true,
     default: Date.now
   },
-  canceledOn: {
+  deliveredOn: {
     type: Date
   },
-  deliveredOn: {
+  canceledOn: {
     type: Date
   },
   deliveryAddress: {
@@ -48,5 +38,5 @@ const orderSchema = new Schema({
     required: true
   }
 });
-const Order = mongoose.model("order", imageSchema);
+const Order = mongoose.model("order", orderSchema);
 export default Order;
