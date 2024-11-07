@@ -15,7 +15,7 @@ const profileImageSchema = new Schema({
   alt: {
     type: String,
     required: true,
-    default: uuidv4
+    default: `profile_image_${uuidv4}`
   },
   contentType: {
     type: String,
@@ -28,5 +28,5 @@ const profileImageSchema = new Schema({
     default: Date.now
   }
 });
-const ProductImage = mongoose.model("profileImage", imageSchema);
-export default ProductImage;
+const ProfileImage = mongoose.model("profileImage", profileImageSchema);
+export default ProfileImage;
