@@ -40,10 +40,14 @@ const productSchema = new Schema({
     type: String,
     required: true
   },
+  sold: {
+    type: Number,
+    required: true
+  },
   launchDate: {
     type: Date,
     default: Date.now
   }
 });
-const Product = mongoose.model("products", productSchema);
+const Product = mongoose.model("product", productSchema);
 export default Product;
