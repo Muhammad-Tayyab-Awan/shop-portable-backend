@@ -31,5 +31,5 @@ const addressSchema = new Schema({
     default: Date.now
   }
 });
-const Addresses = mongoose.model("address", productSchema);
+const Addresses = mongoose.model("address", addressSchema);
 export default Product;
