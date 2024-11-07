@@ -1,7 +1,7 @@
 import express from "express";
 const router = express.Router();
 import Product from "../models/products.js";
-import ProductImage from "../models/Images.js";
+import ProductImage from "../models/images.js";
 router.get("/", async (req, res) => {
   try {
     const products = await Product.find();
