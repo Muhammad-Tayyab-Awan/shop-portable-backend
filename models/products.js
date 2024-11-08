@@ -44,6 +44,11 @@ const productSchema = new Schema({
     type: Number,
     required: true
   },
+  productCreator: {
+    type: Schema.Types.ObjectId,
+    ref: "staff",
+    required: true
+  },
   launchDate: {
     type: Date,
     default: Date.now
