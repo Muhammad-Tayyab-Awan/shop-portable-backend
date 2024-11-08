@@ -6,6 +6,7 @@ import JWT from "jsonwebtoken";
 import Staff from "../models/staff.js";
 import User from "../models/users.js";
 import Address from "../models/addresses.js";
+import verifyLogin from "../middlewares/verifyLogin.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 const router = express.Router();
 router.post(
@@ -63,4 +64,20 @@ router.post(
     }
   }
 );
+router.get("/getuser", verifyLogin, async (req, res) => {
+  try {
+    const staffMember = await Staff.findById(req.staffId).select("-password");
+    if (staffMember) {
+      res.status(200).json({ success: true, staffMember });
+    } else {
+      res.status(403).json({ success: false, error: "Token is Tempered" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 export default router;
