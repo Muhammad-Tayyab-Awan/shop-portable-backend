@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import "dotenv/config";
 import bodyParser from "body-parser";
 import connectToDatabase from "./dbConnect.js";
@@ -6,7 +7,12 @@ import productRoute from "./routes/products.js";
 import staffRoute from "./routes/staff.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+const corsOptions = {
+  origin: "*",
+  credentials: true,
+  optionSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use("/api/products", productRoute);
 app.use("/api/staff", staffRoute);
