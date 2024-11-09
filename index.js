@@ -14,6 +14,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.raw());
+app.use(bodyParser.text());
 app.use("/api/products", productRoute);
 app.use("/api/staff", staffRoute);
 app.get("/", (req, res) => {
