@@ -4,6 +4,8 @@ import expressValidator from "express-validator";
 const { body, validationResult } = expressValidator;
 import JWT from "jsonwebtoken";
 import Staff from "../models/staff.js";
+import transporter from "../mailTransporter.js";
+const PORT = process.env.PORT || 3000;
 import User from "../models/users.js";
 import Address from "../models/addresses.js";
 import verifyLogin from "../middlewares/verifyLogin.js";
@@ -38,8 +40,37 @@ router.post(
             staffMember.password
           );
           if (comparePassword) {
-            let token = JWT.sign({ id: staffMember.id }, JWT_SECRET);
-            res.status(200).json({ success: true, authToken: token });
+            if (staffMember.emailVerified) {
+              let token = JWT.sign({ id: staffMember.id }, JWT_SECRET);
+              res.status(200).json({ success: true, authToken: token });
+            } else {
+              const verificationToken = JWT.sign(
+                { id: staffMember.id },
+                JWT_SECRET
+              );
+              const htmlMessage = `<h3 style="text-align:center;width:100%;">Verify Your Email</h3><p style="text-align:center;width:100%;">Visit this link to verify your email <a href="http://localhost:${PORT}/api/staff/verify-email/${verificationToken}">http://localhost:${PORT}/api/staff/verify-email/${verificationToken}</a></p>`;
+              transporter.sendMail(
+                {
+                  to: staffMember.email,
+                  subject: "Email Verification",
+                  html: htmlMessage
+                },
+                (error) => {
+                  if (error) {
+                    res.status(500).json({
+                      success: false,
+                      error: "Error Occurred on Server Side",
+                      message: error.message
+                    });
+                  } else {
+                    res.status(200).json({
+                      success: true,
+                      error: `We have sent verification email to ${staffMember.email},Check your mailbox and verify your email`
+                    });
+                  }
+                }
+              );
+            }
           } else {
             res.status(400).json({
               success: false,
@@ -64,6 +95,47 @@ router.post(
     }
   }
 );
+router.get("/verify-email/:verificationToken", async (req, res) => {
+  try {
+    const verificationToken = req.params.verificationToken;
+    JWT.verify(verificationToken, JWT_SECRET, async (error, response) => {
+      if (error) {
+        res.status(403).json({
+          status: false,
+          error: "Token is not valid!"
+        });
+      } else {
+        const staffMemberId = response.id;
+        const staffMember = await Staff.findById(staffMemberId).select(
+          "-password"
+        );
+        if (staffMember) {
+          if (staffMember.emailVerified) {
+            res
+              .status(400)
+              .json({ success: false, error: "Email already verified" });
+          } else {
+            await Staff.findByIdAndUpdate(staffMemberId, {
+              emailVerified: true
+            }).select("-password");
+            res.status(200).json({
+              success: true,
+              msg: "Email Verified Successfully,Now you can login into your account"
+            });
+          }
+        } else {
+          res.status(403).json({ success: false, error: "Token is Tempered" });
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 router.get("/getuser", verifyLogin, async (req, res) => {
   try {
     const staffMember = await Staff.findById(req.staffId).select("-password");
