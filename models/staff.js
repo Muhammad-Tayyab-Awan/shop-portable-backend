@@ -18,6 +18,11 @@ const staffSchema = new Schema({
     required: true,
     unique: true
   },
+  emailVerified: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
   role: {
     type: String,
     required: true,
