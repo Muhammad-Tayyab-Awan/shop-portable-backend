@@ -187,7 +187,7 @@ router.put("/updateuser", updateValidations, verifyLogin, async (req, res) => {
           state,
           city,
           postalCode,
-          fullAddress,
+          fullAddress
         } = req.body;
         const updatedFields = {
           username,
@@ -208,13 +208,13 @@ router.put("/updateuser", updateValidations, verifyLogin, async (req, res) => {
           select: "-password -email"
         })
           .then(() => {
-            res.json({
+            res.status(200).json({
               success: true,
               msg: "Staff Member's User Data Updated Successfully"
             });
           })
           .catch((error) => {
-            res.json({
+            res.status(400).json({
               success: false,
               error: `${error.errorResponse.codeName} error Occurred`
             });
@@ -224,6 +224,34 @@ router.put("/updateuser", updateValidations, verifyLogin, async (req, res) => {
       }
     } else {
       return res.status(400).json({ success: false, errors: result.errors });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
+router.get("/deleteuser", verifyLogin, async (req, res) => {
+  try {
+    const staffMember = await Staff.findById(req.staffId).select("-password");
+    if (staffMember) {
+      Staff.findByIdAndDelete(req.staffId)
+        .then(() => {
+          res.status(200).json({
+            success: true,
+            msg: "Your staff member account deleted successfully"
+          });
+        })
+        .catch((error) => {
+          res.status(400).json({
+            success: false,
+            error: `${error.errorResponse.codeName} error Occurred`
+          });
+        });
+    } else {
+      res.status(403).json({ success: false, error: "Token is Tempered" });
     }
   } catch (error) {
     res.status(500).json({
