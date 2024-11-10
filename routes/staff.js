@@ -152,4 +152,85 @@ router.get("/getuser", verifyLogin, async (req, res) => {
     });
   }
 });
+const updateValidations = [
+  body("username")
+    .matches(/^(?=.*[a-z])(?=.*\d)[a-z\d]+$/)
+    .isLength({ min: 6, max: 20 })
+    .optional(),
+  body("firstName").isAlpha().isLength({ min: 3, max: 24 }).optional(),
+  body("lastName").isAlpha().isLength({ min: 3, max: 28 }).optional(),
+  body("gender")
+    .isAlpha()
+    .isLength({ min: 4, max: 6 })
+    .isIn(["Male", "Female"])
+    .optional(),
+  body("dob").isISO8601({ strict: true, strictSeparator: true }).optional(),
+  body("country").isAlpha().optional(),
+  body("state").isAlpha().optional(),
+  body("city").isAlpha().optional(),
+  body("postalCode").isPostalCode("any").optional(),
+  body("fullAddress").isString().isLength({ min: 4 }).optional()
+];
+router.put("/updateuser", updateValidations, verifyLogin, async (req, res) => {
+  try {
+    const result = validationResult(req);
+    if (result.isEmpty()) {
+      const staffMember = await Staff.findById(req.staffId).select("-password");
+      if (staffMember) {
+        const {
+          username,
+          firstName,
+          lastName,
+          gender,
+          dob,
+          country,
+          state,
+          city,
+          postalCode,
+          fullAddress,
+        } = req.body;
+        const updatedFields = {
+          username,
+          firstName,
+          lastName,
+          gender,
+          dob,
+          homeAddress: {
+            country: country || staffMember.homeAddress.country,
+            state: state || staffMember.homeAddress.state,
+            city: city || staffMember.homeAddress.city,
+            postalCode: postalCode || staffMember.homeAddress.postalCode,
+            fullAddress: fullAddress || staffMember.homeAddress.fullAddress
+          }
+        };
+        Staff.findByIdAndUpdate(req.staffId, updatedFields, {
+          new: true,
+          select: "-password -email"
+        })
+          .then(() => {
+            res.json({
+              success: true,
+              msg: "Staff Member's User Data Updated Successfully"
+            });
+          })
+          .catch((error) => {
+            res.json({
+              success: false,
+              error: `${error.errorResponse.codeName} error Occurred`
+            });
+          });
+      } else {
+        res.status(403).json({ success: false, error: "Token is Tempered" });
+      }
+    } else {
+      return res.status(400).json({ success: false, errors: result.errors });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 export default router;
