@@ -237,22 +237,97 @@ router.get("/deleteuser", verifyLogin, async (req, res) => {
   try {
     const staffMember = await Staff.findById(req.staffId).select("-password");
     if (staffMember) {
-      Staff.findByIdAndDelete(req.staffId)
-        .then(() => {
-          res.status(200).json({
-            success: true,
-            msg: "Your staff member account deleted successfully"
-          });
-        })
-        .catch((error) => {
-          res.status(400).json({
-            success: false,
-            error: `${error.errorResponse.codeName} error Occurred`
-          });
-        });
+      const deletionToken = JWT.sign({ id: staffMember.id }, JWT_SECRET);
+      const htmlMessage = `<h1 style="text-align:center;width:100%">Account Deletion</h1><p style="text-align:center;width:100%">Dear ${staffMember.firstName}&nbsp;${staffMember.lastName}, Do You really want to delete your account permanently?</p><p style="text-align:center;"><a href="http://localhost:${PORT}/api/staff/confirm-delete/${deletionToken}" style="background-color:#f00;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">Yes</a>&nbsp;&nbsp;<a href="http://localhost:${PORT}/api/staff/cancel-delete/${deletionToken}" style="background-color:#0f0;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">No</a></p>`;
+      transporter.sendMail(
+        {
+          to: staffMember.email,
+          subject: "Account Deletion Confirmation",
+          html: htmlMessage
+        },
+        (error) => {
+          if (error) {
+            res.status(500).json({
+              success: false,
+              error: "Error Occurred on Server Side",
+              message: error.message
+            });
+          } else {
+            res.status(200).json({
+              success: true,
+              error: `We have sent account deletion confirmation email to ${staffMember.email},Check your mailbox`
+            });
+          }
+        }
+      );
     } else {
       res.status(403).json({ success: false, error: "Token is Tempered" });
     }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
+router.get("/confirm-delete/:deletionToken", async (req, res) => {
+  try {
+    const deletionToken = req.params.deletionToken;
+    JWT.verify(deletionToken, JWT_SECRET, async (error, response) => {
+      if (error) {
+        res.status(403).json({
+          status: false,
+          error: "Token is not valid!"
+        });
+      } else {
+        const staffMemberId = response.id;
+        const staffMember = await Staff.findById(staffMemberId).select(
+          "-password"
+        );
+        if (staffMember) {
+          await Staff.findByIdAndDelete(staffMemberId).select("-password");
+          res.status(200).json({
+            success: true,
+            msg: `Dear ${staffMember.firstName} ${staffMember.lastName}, Your account is successfully deleted`
+          });
+        } else {
+          res.status(403).json({ success: false, error: "Token is Tempered" });
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
+router.get("/cancel-delete/:deletionToken", async (req, res) => {
+  try {
+    const deletionToken = req.params.deletionToken;
+    JWT.verify(deletionToken, JWT_SECRET, async (error, response) => {
+      if (error) {
+        res.status(403).json({
+          status: false,
+          error: "Token is not valid!"
+        });
+      } else {
+        const staffMemberId = response.id;
+        const staffMember = await Staff.findById(staffMemberId).select(
+          "-password"
+        );
+        if (staffMember) {
+          res.status(200).json({
+            success: true,
+            msg: `Dear ${staffMember.firstName} ${staffMember.lastName}, Your account deletion request cancelled successfully`
+          });
+        } else {
+          res.status(403).json({ success: false, error: "Token is Tempered" });
+        }
+      }
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
