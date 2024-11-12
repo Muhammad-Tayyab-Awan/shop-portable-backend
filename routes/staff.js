@@ -418,4 +418,23 @@ router.post(
     }
   }
 );
+router.get("/all-members", verifyAdminLogin, async (req, res) => {
+  try {
+    const staffAdmin = await Staff.findById(req.staffId).select("-password");
+    let allMembers = await Staff.find().select("-password");
+    allMembers = allMembers.filter((member) => {
+      return staffAdmin.username !== member.username;
+    });
+    res.status(200).json({
+      success: true,
+      members: { count: allMembers.length, membersData: allMembers }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 export default router;
