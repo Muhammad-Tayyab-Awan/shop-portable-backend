@@ -31,4 +31,4 @@ const StaffProfileImage = mongoose.model(
   "staffProfileImage",
   staffProfileImageSchema
 );
-export default ProfileImage;
+export default StaffProfileImage;
