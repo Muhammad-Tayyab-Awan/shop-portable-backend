@@ -437,6 +437,30 @@ router.get("/all-members", verifyAdminLogin, async (req, res) => {
     });
   }
 });
+const updateMemberValidations = [
+  body("username")
+    .matches(/^(?=.*[a-z])(?=.*\d)[a-z\d]+$/)
+    .isLength({ min: 6, max: 20 })
+    .optional(),
+  body("firstName").isAlpha().isLength({ min: 3, max: 24 }).optional(),
+  body("lastName").isAlpha().isLength({ min: 3, max: 28 }).optional(),
+  body("email").isEmail().optional(),
+  body("role")
+    .isAlpha()
+    .isIn(["admin", "deliveryMan", "productsManager"])
+    .optional(),
+  body("gender")
+    .isAlpha()
+    .isLength({ min: 4, max: 6 })
+    .isIn(["Male", "Female"])
+    .optional(),
+  body("dob").isISO8601({ strict: true, strictSeparator: true }).optional(),
+  body("country").isAlpha().optional(),
+  body("state").isAlpha().optional(),
+  body("city").isAlpha().optional(),
+  body("postalCode").isPostalCode("any").optional(),
+  body("fullAddress").isString().isLength({ min: 4 }).optional()
+];
 router
   .route("/all-members/:memberId")
   .get(param("memberId").isMongoId(), verifyAdminLogin, async (req, res) => {
@@ -462,5 +486,81 @@ router
         message: error.message
       });
     }
-  });
+  })
+  .put(
+    verifyAdminLogin,
+    param("memberId").isMongoId(),
+    updateMemberValidations,
+    async (req, res) => {
+      try {
+        const result = validationResult(req);
+        if (result.isEmpty()) {
+          const staffMemberId = req.params.memberId;
+          const staffMember = await Staff.findById(staffMemberId).select(
+            "-password"
+          );
+          if (staffMember) {
+            const {
+              username,
+              firstName,
+              lastName,
+              email,
+              role,
+              gender,
+              dob,
+              country,
+              state,
+              city,
+              postalCode,
+              fullAddress
+            } = req.body;
+            const updatedStaffMember = {
+              username,
+              firstName,
+              lastName,
+              email,
+              role,
+              gender,
+              dob,
+              homeAddress: {
+                country: country || staffMember.homeAddress.country,
+                state: state || staffMember.homeAddress.state,
+                city: city || staffMember.homeAddress.city,
+                postalCode: postalCode || staffMember.homeAddress.postalCode,
+                fullAddress: fullAddress || staffMember.homeAddress.fullAddress
+              }
+            };
+            Staff.findByIdAndUpdate(staffMemberId, updatedStaffMember, {
+              new: true,
+              select: "-password -email"
+            })
+              .then(() => {
+                res.status(200).json({
+                  success: true,
+                  msg: "Staff Member's User Data Updated Successfully"
+                });
+              })
+              .catch((error) => {
+                res.status(400).json({
+                  success: false,
+                  error: `${error.errorResponse.codeName} error Occurred`
+                });
+              });
+          } else {
+            res
+              .status(400)
+              .json({ success: false, error: "Token is Tempered" });
+          }
+        } else {
+          res.status(400).json({ success: false, error: result.errors });
+        }
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: "Error Occurred on Server Side",
+          message: error.message
+        });
+      }
+    }
+  );
 export default router;
