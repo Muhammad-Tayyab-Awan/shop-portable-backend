@@ -1,6 +1,6 @@
 import express from "express";
 import bcrypt from "bcryptjs";
-import expressValidator from "express-validator";
+import expressValidator, { param } from "express-validator";
 const { body, validationResult } = expressValidator;
 import JWT from "jsonwebtoken";
 import Staff from "../models/staff.js";
@@ -437,4 +437,30 @@ router.get("/all-members", verifyAdminLogin, async (req, res) => {
     });
   }
 });
+router
+  .route("/all-members/:memberId")
+  .get(param("memberId").isMongoId(), verifyAdminLogin, async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const staffMemberId = req.params.memberId;
+        const staffMember = await Staff.findById(staffMemberId).select(
+          "-password"
+        );
+        if (staffMember) {
+          res.status(200).json({ success: true, memberData: staffMember });
+        } else {
+          res.status(400).json({ success: false, error: "No Member found" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
 export default router;
