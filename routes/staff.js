@@ -272,7 +272,7 @@ router.get("/deleteuser", verifyLogin, async (req, res) => {
     });
   }
 });
-router.get("/confirm-delete/:deletionToken", async (req, res) => {
+router.delete("/confirm-delete/:deletionToken", async (req, res) => {
   try {
     const deletionToken = req.params.deletionToken;
     JWT.verify(deletionToken, JWT_SECRET, async (error, response) => {
