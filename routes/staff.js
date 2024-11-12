@@ -562,5 +562,33 @@ router
         });
       }
     }
-  );
+  )
+  .delete(verifyAdminLogin, param("memberId").isMongoId(), async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const staffMemberId = req.params.memberId;
+        const staffMember = await Staff.findById(staffMemberId).select(
+          "-password"
+        );
+        if (staffMember) {
+          await Staff.findByIdAndDelete(staffMemberId).select("-password");
+          res.status(200).json({
+            success: true,
+            msg: `Account of Staff Member ${staffMember.username} is deleted successfully`
+          });
+        } else {
+          res.status(400).json({ success: false, error: "Token is Tempered" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
 export default router;
