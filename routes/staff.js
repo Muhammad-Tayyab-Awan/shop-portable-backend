@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 import User from "../models/users.js";
 import Address from "../models/addresses.js";
 import verifyLogin from "../middlewares/verifyLogin.js";
+import verifyAdminLogin from "../middlewares/verifyAdminLogin.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 const router = express.Router();
 router.post(
@@ -336,4 +337,85 @@ router.get("/cancel-delete/:deletionToken", async (req, res) => {
     });
   }
 });
+const addMemberValidations = [
+  body("username")
+    .matches(/^(?=.*[a-z])(?=.*\d)[a-z\d]+$/)
+    .isLength({ min: 6, max: 20 }),
+  body("firstName").isAlpha().isLength({ min: 3, max: 24 }),
+  body("lastName").isAlpha().isLength({ min: 3, max: 28 }),
+  body("email").isEmail(),
+  body("role").isAlpha().isIn(["admin", "deliveryMan", "productsManager"]),
+  body(
+    "password",
+    "Password must contain at Least 3 numbers, 3 lowercase chars, 1 symbol and 1 uppercase char"
+  ).isStrongPassword({
+    minLength: 8,
+    minNumbers: 3,
+    minLowercase: 3,
+    minSymbols: 1,
+    minUppercase: 1
+  }),
+  body("gender")
+    .isAlpha()
+    .isLength({ min: 4, max: 6 })
+    .isIn(["Male", "Female"]),
+  body("dob").isISO8601({ strict: true, strictSeparator: true }),
+  body("country").isAlpha(),
+  body("state").isAlpha(),
+  body("city").isAlpha(),
+  body("postalCode").isPostalCode("any"),
+  body("fullAddress").isString().isLength({ min: 4 })
+];
+router.post(
+  "/addmember",
+  verifyAdminLogin,
+  addMemberValidations,
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(req.body.password, salt);
+        const newMember = {
+          username: req.body.username,
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          email: req.body.email,
+          role: req.body.role,
+          password: hashedPassword,
+          gender: req.body.gender,
+          dob: req.body.dob,
+          homeAddress: {
+            country: req.body.country,
+            state: req.body.state,
+            city: req.body.city,
+            postalCode: req.body.postalCode,
+            fullAddress: req.body.fullAddress
+          }
+        };
+        Staff.create(newMember)
+          .then(async () => {
+            res
+              .status(200)
+              .json({ success: true, msg: "New Member added successfully" });
+          })
+          .catch((error) => {
+            res.status(400).json({
+              success: false,
+              error: "Duplicate key error",
+              msg: error.message
+            });
+          });
+      } else {
+        return res.status(400).json({ success: false, errors: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
