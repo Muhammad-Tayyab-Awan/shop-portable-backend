@@ -16,7 +16,8 @@ const staffProfileImageSchema = new Schema(
     alt: {
       type: String,
       required: true,
-      default: `profile_image_${uuidv4}`
+      unique: true,
+      default: `profile_image_${uuidv4()}`
     },
     contentType: {
       type: String,
