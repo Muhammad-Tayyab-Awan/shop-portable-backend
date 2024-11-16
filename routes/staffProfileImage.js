@@ -89,6 +89,55 @@ router
         message: error.message
       });
     }
+  })
+  .put(verifyLogin, upload.single("staffProfileImage"), async (req, res) => {
+    try {
+      const staffMemberId = req.staffId;
+      const staffMember = await Staff.findById(staffMemberId);
+      if (staffMember) {
+        if (!req.file) {
+          res.status(400).json({
+            success: false,
+            error: "No image file uploaded please upload an image file"
+          });
+        } else {
+          if (req.file.mimetype !== "image/png") {
+            res.status(400).json({
+              success: false,
+              error: "We only accept image in png format"
+            });
+          } else {
+            const stProfileImage = await StaffProfileImage.findOne({
+              staffMember: staffMemberId
+            });
+            if (stProfileImage) {
+              stProfileImage.image = req.file.buffer;
+              await stProfileImage.save();
+              res.status(200).json({
+                success: true,
+                msg: "Profile image updated successfully"
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No image found for current user"
+              });
+            }
+          }
+        }
+      } else {
+        res.status(400).json({
+          success: false,
+          error: "Token is Tempered"
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
   });
 router
   .route("/:memberId")
