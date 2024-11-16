@@ -138,6 +138,39 @@ router
         message: error.message
       });
     }
+  })
+  .delete(verifyLogin, async (req, res) => {
+    try {
+      const staffMemberId = req.staffId;
+      const staffMember = await Staff.findById(staffMemberId);
+      if (staffMember) {
+        const stProfileImage = await StaffProfileImage.findOne({
+          staffMember: staffMemberId
+        });
+        if (stProfileImage) {
+          await StaffProfileImage.findOneAndDelete({
+            staffMember: staffMemberId
+          });
+          res.status(200).json({
+            success: false,
+            msg: "Profile image deleted successfully"
+          });
+        } else {
+          res.status(400).json({
+            success: false,
+            error: "No image found for current user"
+          });
+        }
+      } else {
+        res.status(400).json({ success: false, error: "Token is Tempered" });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
   });
 router
   .route("/:memberId")
