@@ -1,12 +1,44 @@
 import express from "express";
 import multer from "multer";
 import verifyAdminLogin from "../middlewares/verifyAdminLogin.js";
+import verifyLogin from "../middlewares/verifyLogin.js";
 import StaffProfileImage from "../models/staffProfileImages.js";
 import Staff from "../models/staff.js";
 import { param, validationResult } from "express-validator";
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const router = express.Router();
+router.route("/").get(verifyLogin, async (req, res) => {
+  try {
+    const staffMemberId = req.staffId;
+    const staffMember = await Staff.findById(staffMemberId);
+    if (staffMember) {
+      const staffProfileImage = await StaffProfileImage.findOne({
+        staffMember: staffMemberId
+      });
+      if (staffProfileImage) {
+        res.contentType(staffProfileImage.contentType);
+        res.send(staffProfileImage.image);
+      } else {
+        res.status(400).json({
+          success: false,
+          error: "No image found for current user"
+        });
+      }
+    } else {
+      res.status(400).json({
+        success: false,
+        error: "Token is Tempered"
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 router
   .route("/:memberId")
   .post(
