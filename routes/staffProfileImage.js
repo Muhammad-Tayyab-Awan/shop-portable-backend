@@ -8,37 +8,88 @@ import { param, validationResult } from "express-validator";
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const router = express.Router();
-router.route("/").get(verifyLogin, async (req, res) => {
-  try {
-    const staffMemberId = req.staffId;
-    const staffMember = await Staff.findById(staffMemberId);
-    if (staffMember) {
-      const staffProfileImage = await StaffProfileImage.findOne({
-        staffMember: staffMemberId
-      });
-      if (staffProfileImage) {
-        res.contentType(staffProfileImage.contentType);
-        res.send(staffProfileImage.image);
+router
+  .route("/")
+  .get(verifyLogin, async (req, res) => {
+    try {
+      const staffMemberId = req.staffId;
+      const staffMember = await Staff.findById(staffMemberId);
+      if (staffMember) {
+        const staffProfileImage = await StaffProfileImage.findOne({
+          staffMember: staffMemberId
+        });
+        if (staffProfileImage) {
+          res.contentType(staffProfileImage.contentType);
+          res.send(staffProfileImage.image);
+        } else {
+          res.status(400).json({
+            success: false,
+            error: "No image found for current user"
+          });
+        }
       } else {
         res.status(400).json({
           success: false,
-          error: "No image found for current user"
+          error: "Token is Tempered"
         });
       }
-    } else {
-      res.status(400).json({
+    } catch (error) {
+      res.status(500).json({
         success: false,
-        error: "Token is Tempered"
+        error: "Error Occurred on Server Side",
+        message: error.message
       });
     }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Error Occurred on Server Side",
-      message: error.message
-    });
-  }
-});
+  })
+  .post(verifyLogin, upload.single("staffProfileImage"), async (req, res) => {
+    try {
+      const staffMemberId = req.staffId;
+      const staffMember = await Staff.findById(staffMemberId);
+      if (staffMember) {
+        if (!req.file) {
+          res.status(400).json({
+            success: false,
+            error: "No image file uploaded please upload an image file"
+          });
+        } else {
+          if (req.file.mimetype !== "image/png") {
+            res.status(400).json({
+              success: false,
+              error: "We only accept image in png format"
+            });
+          } else {
+            const stProfileImage = await StaffProfileImage.findOne({
+              staffMember: staffMemberId
+            });
+            if (stProfileImage) {
+              res.status(400).json({
+                success: false,
+                msg: "Profile image already exists"
+              });
+            } else {
+              StaffProfileImage.create({
+                staffMember: staffMemberId,
+                image: req.file.buffer
+              }).then(() => {
+                res.status(200).json({
+                  success: true,
+                  msg: "Profile image uploaded successfully"
+                });
+              });
+            }
+          }
+        }
+      } else {
+        res.status(400).json({ success: false, error: "Token is Tempered" });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
 router
   .route("/:memberId")
   .post(
