@@ -6,6 +6,7 @@ import connectToDatabase from "./dbConnect.js";
 import productRoute from "./routes/products.js";
 import staffRoute from "./routes/staff.js";
 import staffProfileImageRoute from "./routes/staffProfileImage.js";
+import productsImagesRoute from "./routes/productImages.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
@@ -19,6 +20,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.raw());
 app.use(bodyParser.text());
 app.use("/api/products", productRoute);
+app.use("/api/products-images", productsImagesRoute);
 app.use("/api/staff", staffRoute);
 app.use("/api/staff-profile-image", staffProfileImageRoute);
 app.get("/", (req, res) => {
