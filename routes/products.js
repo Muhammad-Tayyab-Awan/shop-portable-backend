@@ -12,7 +12,9 @@ router
       if (products.length > 0) {
         const allProducts = await Promise.all(
           products.map(async (product) => {
-            const productImage = await ProductImage.findById(product.imageId);
+            const productImage = await ProductImage.findOne({
+              product: product.id
+            });
             return {
               ...product._doc,
               images: productImage
@@ -35,7 +37,6 @@ router
       body("pname")
         .matches(/^[a-zA-Z0-9 ]+$/)
         .isLength({ min: 8 }),
-      body("imageId").isMongoId(),
       body("description")
         .matches(/^[a-zA-Z0-9 ]+$/)
         .isLength({ min: 20 }),
@@ -54,26 +55,18 @@ router
         const result = validationResult(req);
         if (result.isEmpty()) {
           const staffMemberId = req.staffId;
-          const { imageId } = req.body;
-          const pImage = await ProductImage.findById(imageId);
-          if (pImage) {
-            let newProduct = req.body;
-            newProduct.productCreator = staffMemberId;
-            Product.create(newProduct)
-              .then(() => {
-                res.status(200).json({
-                  success: true,
-                  msg: "New product added successfully"
-                });
-              })
-              .catch((error) => {
-                res.status(400).json({ success: false, error: error.message });
+          let newProduct = req.body;
+          newProduct.productCreator = staffMemberId;
+          Product.create(newProduct)
+            .then(() => {
+              res.status(200).json({
+                success: true,
+                msg: "Added new product"
               });
-          } else {
-            res
-              .status(400)
-              .json({ success: false, error: "No product images found" });
-          }
+            })
+            .catch((error) => {
+              res.status(400).json({ success: false, error: error.message });
+            });
         } else {
           res.status(400).json({
             success: false,
