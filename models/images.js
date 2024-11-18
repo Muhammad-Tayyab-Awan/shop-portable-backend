@@ -1,6 +1,12 @@
 import mongoose, { Schema } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 const imageSchema = new Schema({
+  product: {
+    type: Schema.Types.ObjectId,
+    ref: "product",
+    required: true,
+    unique: true
+  },
   image1: {
     type: Buffer,
     unique: true,

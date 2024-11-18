@@ -6,12 +6,6 @@ const productSchema = new Schema(
       unique: true,
       required: true
     },
-    imageId: {
-      type: Schema.Types.ObjectId,
-      ref: "productimage",
-      required: true,
-      unique: true
-    },
     description: {
       type: String,
       required: true
