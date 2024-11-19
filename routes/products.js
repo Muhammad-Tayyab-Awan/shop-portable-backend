@@ -12,7 +12,7 @@ router
       if (products.length > 0) {
         const allProducts = await Promise.all(
           products.map(async (product) => {
-            const productImage = await ProductImage.findOne({
+            const productImage = await ProductImage.find({
               product: product.id
             });
             return {
