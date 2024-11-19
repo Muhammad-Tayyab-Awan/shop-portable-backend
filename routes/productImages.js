@@ -175,5 +175,33 @@ router
         message: error.message
       });
     }
+  })
+  .delete(verifyAdPMLogin, param("imageId"), async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const imageId = req.params.imageId;
+        const image = await ProductImage.findById(imageId);
+        if (image) {
+          await ProductImage.findByIdAndDelete(imageId);
+          res.status(200).json({
+            success: true,
+            msg: "Product image deleted successfully"
+          });
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "No image found with this id" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
   });
 export default router;
