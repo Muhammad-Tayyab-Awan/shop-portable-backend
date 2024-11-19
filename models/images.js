@@ -4,8 +4,7 @@ const imageSchema = new Schema({
   product: {
     type: Schema.Types.ObjectId,
     ref: "product",
-    required: true,
-    unique: true
+    required: true
   },
   image: {
     type: Buffer,
