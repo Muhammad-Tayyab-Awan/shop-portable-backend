@@ -151,5 +151,58 @@ router
         message: error.message
       });
     }
-  });
+  })
+  .put(
+    verifyAdPMLogin,
+    param("productId").isMongoId(),
+    [
+      body("pname")
+        .matches(/^[a-zA-Z0-9 ]+$/)
+        .isLength({ min: 8 })
+        .optional(),
+      body("description")
+        .matches(/^[a-zA-Z0-9 ]+$/)
+        .isLength({ min: 20 })
+        .optional(),
+      body("price").isNumeric().optional(),
+      body("category").isAlpha().isIn(["Laptop", "Accessory"]).optional(),
+      body("status").isAlpha().isIn(["Used", "New"]).optional(),
+      body("stock").isNumeric().optional(),
+      body("discount").isNumeric().optional(),
+      body("brand")
+        .matches(/^[a-zA-Z0-9 ]+$/)
+        .isLength({ min: 2 })
+        .optional(),
+      body("sold").isNumeric().optional()
+    ],
+    async (req, res) => {
+      try {
+        const result = validationResult(req);
+        if (result.isEmpty()) {
+          const productId = req.params.productId;
+          const product = await Product.findById(productId);
+          if (product) {
+            const updatedFields = req.body;
+            await Product.findByIdAndUpdate(productId, updatedFields);
+            res
+              .status(200)
+              .json({ success: true, msg: "Product updated successfully" });
+          } else {
+            res.status(400).json({
+              success: false,
+              error: "Product with that id is not found"
+            });
+          }
+        } else {
+          res.status(400).json({ success: false, error: result.errors });
+        }
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: "Error Occurred on Server Side",
+          message: error.message
+        });
+      }
+    }
+  );
 export default router;
