@@ -128,14 +128,42 @@ router
               msg: "Product images deleted successfully"
             });
           } else {
-            res
-             .status(400)
-             .json({ success: false, error: "No images found for that product" });
+            res.status(400).json({
+              success: false,
+              error: "No images found for that product"
+            });
           }
         } else {
           res
             .status(400)
             .json({ success: false, error: "Product with that id not found" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
+
+router
+  .route("/image/:imageId")
+  .get(verifyAdPMLogin, param("imageId").isMongoId(), async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const imageId = req.params.imageId;
+        const image = await ProductImage.findById(imageId);
+        if (image) {
+          res.status(200).json({ success: true, image: image });
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "No image found with this id" });
         }
       } else {
         res.status(400).json({ success: false, error: result.errors });
