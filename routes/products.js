@@ -115,5 +115,41 @@ router
         message: error.message
       });
     }
+  })
+  .delete(verifyAdPMLogin, param("productId"), async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const productId = req.params.productId;
+        const product = await Product.findById(productId);
+        if (product) {
+          const productImages = await ProductImage.find({ product: productId });
+          if (productImages.length > 0) {
+            await ProductImage.deleteMany({ product: productId });
+            await Product.findByIdAndDelete(productId);
+            res
+              .status(200)
+              .json({ success: true, msg: "Product deleted successfully" });
+          } else {
+            await Product.findByIdAndDelete(productId);
+            res
+              .status(200)
+              .json({ success: true, msg: "Product deleted successfully" });
+          }
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "Product with that id not found" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
   });
 export default router;
