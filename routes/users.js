@@ -1,6 +1,10 @@
 import express from "express";
 import User from "../models/users.js";
 import bcrypt from "bcryptjs";
+import JWT from "jsonwebtoken";
+const JWT_SECRET = process.env.JWT_SECRET;
+const PORT = process.env.PORT || 3000;
+import transporter from "../mailTransporter.js";
 import { body, validationResult } from "express-validator";
 const router = express.Router();
 router.route("/").post([
@@ -89,4 +93,84 @@ router.route("/").post([
     }
   }
 ]);
+router.post(
+  "/login",
+  [
+    body("email", "Please Enter Correct Email").isEmail(),
+    body(
+      "password",
+      "Password must contain at Least 3 numbers, 3 lowercase chars, 1 symbol and 1 uppercase char"
+    ).isStrongPassword({
+      minLength: 8,
+      minNumbers: 3,
+      minLowercase: 3,
+      minSymbols: 1,
+      minUppercase: 1
+    })
+  ],
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const { email, password } = req.body;
+        const logInUser = await User.findOne({ email: email });
+        if (logInUser) {
+          const passwordMatch = await bcrypt.compare(
+            password,
+            logInUser.password
+          );
+          if (passwordMatch) {
+            if (logInUser.emailVerified) {
+              const token = JWT.sign({ id: logInUser.id }, JWT_SECRET);
+              res.status(200).json({ success: true, authToken: token });
+            } else {
+              const verificationToken = JWT.sign(
+                { id: logInUser.id },
+                JWT_SECRET
+              );
+              const htmlMessage = `<h3 style="text-align:center;width:100%;">Verify Your Email</h3><p style="text-align:center;width:100%;">Visit this link to verify your email <a href="http://localhost:${PORT}/api/users/verify-email/${verificationToken}">http://localhost:${PORT}/api/users/verify-email/${verificationToken}</a></p>`;
+              transporter.sendMail(
+                {
+                  to: logInUser.email,
+                  subject: "Email Verification",
+                  html: htmlMessage
+                },
+                (error) => {
+                  if (error) {
+                    res.status(500).json({
+                      success: false,
+                      error: "Error Occurred on Server Side",
+                      message: error.message
+                    });
+                  } else {
+                    res.status(200).json({
+                      success: true,
+                      error: `We have sent verification email to ${logInUser.email},Check your mailbox and verify your email`
+                    });
+                  }
+                }
+              );
+            }
+          } else {
+            res
+              .status(400)
+              .json({ success: false, error: "Invalid log in credentials2" });
+          }
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "Invalid log in credentials1" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
