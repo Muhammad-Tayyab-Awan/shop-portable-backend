@@ -26,6 +26,10 @@ const addressSchema = new Schema({
     type: String,
     required: true
   },
+  isDefault: {
+    type: Boolean,
+    required: true
+  },
   addedOn: {
     type: Date,
     default: Date.now
