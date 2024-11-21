@@ -5,7 +5,7 @@ import JWT from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET;
 const PORT = process.env.PORT || 3000;
 import transporter from "../mailTransporter.js";
-import { body, validationResult } from "express-validator";
+import { body, param, validationResult } from "express-validator";
 const router = express.Router();
 router.route("/").post([
   body("username")
@@ -161,6 +161,56 @@ router.post(
             .status(400)
             .json({ success: false, error: "Invalid log in credentials1" });
         }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
+router.get(
+  "/verify-email/:verificationToken",
+  param("verificationToken").isJWT(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const verificationToken = req.params.verificationToken;
+        JWT.verify(verificationToken, JWT_SECRET, async (error, response) => {
+          if (error) {
+            res.status(403).json({
+              status: false,
+              error: "Token is not valid!"
+            });
+          } else {
+            const userId = response.id;
+            const user = await User.findById(userId).select("-password");
+            if (user) {
+              if (user.emailVerified) {
+                res
+                  .status(400)
+                  .json({ success: false, error: "Email already verified" });
+              } else {
+                await User.findByIdAndUpdate(userId, {
+                  emailVerified: true
+                }).select("-password");
+                res.status(200).json({
+                  success: true,
+                  msg: "Email Verified Successfully,Now you can login into your account"
+                });
+              }
+            } else {
+              res
+                .status(403)
+                .json({ success: false, error: "Token is Tempered" });
+            }
+          }
+        });
       } else {
         res.status(400).json({ success: false, error: result.errors });
       }
