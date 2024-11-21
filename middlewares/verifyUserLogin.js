@@ -1,5 +1,5 @@
 import JWT from "jsonwebtoken";
-import User from "../models/users";
+import User from "../models/users.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 async function verifyUserLogin(req, res, next) {
   let token = req.header("auth-token");
