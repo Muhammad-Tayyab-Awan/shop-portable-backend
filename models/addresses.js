@@ -24,7 +24,8 @@ const addressSchema = new Schema({
   },
   fullAddress: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
   isDefault: {
     type: Boolean,
