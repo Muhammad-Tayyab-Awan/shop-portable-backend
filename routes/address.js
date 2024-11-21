@@ -33,19 +33,16 @@ router
                 error: "A Default Address already exists"
               });
             } else {
-              Address.create(newAddress).then(() => {
-                res
-                  .status(200)
-                  .json({
+              Address.create(newAddress)
+                .then(() => {
+                  res.status(200).json({
                     success: true,
                     msg: "New Address created successfully"
-                  })
-                  .catch((err) => {
-                    res
-                      .status(400)
-                      .json({ success: false, error: err.message });
                   });
-              });
+                })
+                .catch((err) => {
+                  res.status(400).json({ success: false, error: err.message });
+                });
             }
           } else {
             Address.create(newAddress)
