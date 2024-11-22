@@ -207,7 +207,42 @@ router
         });
       }
     }
-  );
+  )
+  .delete(verifyUserLogin, async (req, res) => {
+    try {
+      const userId = req.userId;
+      const user = await User.findById(userId).select("-password");
+      const deletionToken = JWT.sign({ id: userId }, JWT_SECRET);
+      const htmlMessage = `<h1 style="text-align:center;width:100%">Account Deletion</h1><p style="text-align:center;width:100%">Dear ${user.firstName}&nbsp;${user.lastName}, Do You really want to delete your account permanently?</p><p style="text-align:center;"><a href="http://localhost:${PORT}/api/users/confirm-delete/${deletionToken}" style="background-color:#f00;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">Yes</a>&nbsp;&nbsp;<a href="http://localhost:${PORT}/api/users/cancel-delete/${deletionToken}" style="background-color:#0f0;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">No</a></p>`;
+      transporter.sendMail(
+        {
+          to: user.email,
+          subject: "Account Deletion Confirmation",
+          html: htmlMessage
+        },
+        (error) => {
+          if (error) {
+            res.status(500).json({
+              success: false,
+              error: "Error Occurred on Server Side",
+              message: error.message
+            });
+          } else {
+            res.status(200).json({
+              success: true,
+              error: `We have sent account deletion confirmation email to ${user.email},Check your mailbox`
+            });
+          }
+        }
+      );
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
 router.post(
   "/login",
   [
