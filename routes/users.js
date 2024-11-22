@@ -603,5 +603,32 @@ router
         });
       }
     }
-  );
+  )
+  .delete(verifyAdminLogin, param("userId"), async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const userId = req.params.userId;
+        const user = await User.findById(userId).select("-password");
+        if (user) {
+          await User.findByIdAndDelete(userId);
+          res
+            .status(200)
+            .json({ success: true, msg: "User account deleted successfully" });
+        } else {
+          res
+            .status(400)
+            .json({ success: true, error: "No user found with that id" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
 export default router;
