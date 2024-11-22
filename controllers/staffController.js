@@ -413,6 +413,10 @@ const updateParticularMember = async (req, res) => {
           firstName,
           lastName,
           email,
+          emailVerified:
+            email && email !== staffMember.email
+              ? false
+              : staffMember.emailVerified,
           role,
           gender,
           dob,
