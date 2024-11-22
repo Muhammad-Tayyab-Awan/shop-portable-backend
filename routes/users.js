@@ -474,11 +474,9 @@ router.get("/all-users", verifyAdminLogin, async (req, res) => {
     });
   }
 });
-router.get(
-  "/all-users/:userId",
-  verifyAdminLogin,
-  param("userId").isMongoId(),
-  async (req, res) => {
+router
+  .route("/all-users/:userId")
+  .get(verifyAdminLogin, param("userId").isMongoId(), async (req, res) => {
     try {
       const result = validationResult(req);
       if (result.isEmpty()) {
@@ -501,6 +499,109 @@ router.get(
         message: error.message
       });
     }
-  }
-);
+  })
+  .put(
+    verifyAdminLogin,
+    param("userId").isMongoId(),
+    [
+      body("username")
+        .matches(/^[a-zA-Z0-9 ]+$/)
+        .isLength({ min: 6, max: 20 })
+        .optional(),
+      body("firstName")
+        .matches(/^[a-zA-Z ]+$/)
+        .isLength({ min: 3, max: 24 })
+        .optional(),
+      body("lastName")
+        .matches(/^[a-zA-Z ]+$/)
+        .isLength({ min: 3, max: 28 })
+        .optional(),
+      body("gender")
+        .isIn(["Male", "Female"])
+        .isLength({ min: 4, max: 6 })
+        .optional(),
+      body("email").isEmail().optional(),
+      body("dob").isISO8601({ strict: true, strictSeparator: true }).optional(),
+      body("country")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("state")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("city")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("postalCode").isPostalCode("any").optional(),
+      body("fullAddress").isString().isLength({ min: 4 }).optional()
+    ],
+    async (req, res) => {
+      try {
+        const result = validationResult(req);
+        if (result.isEmpty()) {
+          const userId = req.params.userId;
+          const user = await User.findById(userId);
+          if (user) {
+            const {
+              username,
+              firstName,
+              lastName,
+              email,
+              gender,
+              dob,
+              country,
+              state,
+              city,
+              postalCode,
+              fullAddress
+            } = req.body;
+            const updatedUser = {
+              username,
+              firstName,
+              lastName,
+              email,
+              emailVerified:
+                email && email !== user.email ? false : user.emailVerified,
+              gender,
+              dob,
+              homeAddress: {
+                country: country || user.homeAddress.country,
+                state: state || user.homeAddress.state,
+                city: city || user.homeAddress.city,
+                postalCode: postalCode || user.homeAddress.postalCode,
+                fullAddress: fullAddress || user.homeAddress.fullAddress
+              }
+            };
+            User.findByIdAndUpdate(userId, updatedUser, {
+              new: true,
+              select: "-password -email"
+            })
+              .then(() => {
+                res.status(200).json({
+                  success: true,
+                  msg: `${user.username}'s data is updated successfully`
+                });
+              })
+              .catch((error) => {
+                res.status(400).json({
+                  success: false,
+                  error: `${error.errorResponse.codeName} error Occurred`
+                });
+              });
+          } else {
+            res
+              .status(400)
+              .json({ success: false, error: "No user found with that id" });
+          }
+        } else {
+          res.status(400).json({ success: false, error: result.errors });
+        }
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: "Error Occurred on Server Side",
+          message: error.message
+        });
+      }
+    }
+  );
 export default router;
