@@ -243,6 +243,48 @@ router
       });
     }
   });
+router.get(
+  "/confirm-delete/:deletionToken",
+  param("deletionToken").isJWT(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const deletionToken = req.params.deletionToken;
+        JWT.verify(deletionToken, JWT_SECRET, async (error, response) => {
+          if (error) {
+            res.status(403).json({
+              status: false,
+              error: "Token is not valid!"
+            });
+          } else {
+            const userId = response.id;
+            const user = await User.findById(userId).select("-password");
+            if (user) {
+              await User.findByIdAndDelete(userId).select("-password");
+              res.status(200).json({
+                success: true,
+                msg: `Dear ${user.firstName} ${user.lastName}, Your account is successfully deleted`
+              });
+            } else {
+              res
+                .status(403)
+                .json({ success: false, error: "Token is Tempered" });
+            }
+          }
+        });
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 router.post(
   "/login",
   [
