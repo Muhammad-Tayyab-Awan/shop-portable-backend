@@ -10,34 +10,36 @@ import { body, param, validationResult } from "express-validator";
 const router = express.Router();
 router
   .route("/")
-  .post([
-    body("username")
-      .matches(/^[a-zA-Z0-9 ]+$/)
-      .isLength({ min: 6, max: 20 }),
-    body("firstName")
-      .matches(/^[a-zA-Z ]+$/)
-      .isLength({ min: 3, max: 24 }),
-    body("lastName")
-      .matches(/^[a-zA-Z ]+$/)
-      .isLength({ min: 3, max: 28 }),
-    body("gender").isIn(["Male", "Female"]).isLength({ min: 4, max: 6 }),
-    body("email").isEmail(),
-    body(
-      "password",
-      "Password must contain at Least 3 numbers, 3 lowercase chars, 1 symbol and 1 uppercase char"
-    ).isStrongPassword({
-      minLength: 8,
-      minNumbers: 3,
-      minLowercase: 3,
-      minSymbols: 1,
-      minUppercase: 1
-    }),
-    body("dob").isISO8601({ strict: true, strictSeparator: true }),
-    body("country").matches(/^[a-zA-Z ]+$/),
-    body("state").matches(/^[a-zA-Z ]+$/),
-    body("city").matches(/^[a-zA-Z ]+$/),
-    body("postalCode").isPostalCode("any"),
-    body("fullAddress").isString().isLength({ min: 4 }),
+  .post(
+    [
+      body("username")
+        .matches(/^[a-zA-Z0-9 ]+$/)
+        .isLength({ min: 6, max: 20 }),
+      body("firstName")
+        .matches(/^[a-zA-Z ]+$/)
+        .isLength({ min: 3, max: 24 }),
+      body("lastName")
+        .matches(/^[a-zA-Z ]+$/)
+        .isLength({ min: 3, max: 28 }),
+      body("gender").isIn(["Male", "Female"]).isLength({ min: 4, max: 6 }),
+      body("email").isEmail(),
+      body(
+        "password",
+        "Password must contain at Least 3 numbers, 3 lowercase chars, 1 symbol and 1 uppercase char"
+      ).isStrongPassword({
+        minLength: 8,
+        minNumbers: 3,
+        minLowercase: 3,
+        minSymbols: 1,
+        minUppercase: 1
+      }),
+      body("dob").isISO8601({ strict: true, strictSeparator: true }),
+      body("country").matches(/^[a-zA-Z ]+$/),
+      body("state").matches(/^[a-zA-Z ]+$/),
+      body("city").matches(/^[a-zA-Z ]+$/),
+      body("postalCode").isPostalCode("any"),
+      body("fullAddress").isString().isLength({ min: 4 })
+    ],
     async (req, res) => {
       try {
         const result = validationResult(req);
@@ -95,7 +97,7 @@ router
         });
       }
     }
-  ])
+  )
   .get(verifyUserLogin, async (req, res) => {
     try {
       const userId = req.userId;
@@ -108,7 +110,104 @@ router
         message: error.message
       });
     }
-  });
+  })
+  .put(
+    verifyUserLogin,
+    [
+      body("username")
+        .matches(/^[a-zA-Z0-9 ]+$/)
+        .isLength({ min: 6, max: 20 })
+        .optional(),
+      body("firstName")
+        .matches(/^[a-zA-Z ]+$/)
+        .isLength({ min: 3, max: 24 })
+        .optional(),
+      body("lastName")
+        .matches(/^[a-zA-Z ]+$/)
+        .isLength({ min: 3, max: 28 })
+        .optional(),
+      body("gender")
+        .isIn(["Male", "Female"])
+        .isLength({ min: 4, max: 6 })
+        .optional(),
+      body("email").isEmail().optional(),
+      body("dob").isISO8601({ strict: true, strictSeparator: true }).optional(),
+      body("country")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("state")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("city")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("postalCode").isPostalCode("any").optional(),
+      body("fullAddress").isString().isLength({ min: 4 }).optional()
+    ],
+    async (req, res) => {
+      try {
+        const result = validationResult(req);
+        if (result.isEmpty()) {
+          const userId = req.userId;
+          const user = await User.findById(userId);
+          const {
+            username,
+            firstName,
+            lastName,
+            email,
+            gender,
+            dob,
+            country,
+            state,
+            city,
+            postalCode,
+            fullAddress
+          } = req.body;
+          const updatedUser = {
+            username,
+            firstName,
+            lastName,
+            email,
+            emailVerified:
+              email && email !== user.email ? false : user.emailVerified,
+            gender,
+            dob,
+            homeAddress: {
+              country: country || user.homeAddress.country,
+              state: state || user.homeAddress.state,
+              city: city || user.homeAddress.city,
+              postalCode: postalCode || user.homeAddress.postalCode,
+              fullAddress: fullAddress || user.homeAddress.fullAddress
+            }
+          };
+          User.findByIdAndUpdate(userId, updatedUser, {
+            new: true,
+            select: "-password -email"
+          })
+            .then(() => {
+              res.status(200).json({
+                success: true,
+                msg: `Dear ${user.username} you data updated successfully`
+              });
+            })
+            .catch((error) => {
+              res.status(400).json({
+                success: false,
+                error: `${error.errorResponse.codeName} error Occurred`
+              });
+            });
+        } else {
+          res.status(400).json({ success: false, error: result.errors });
+        }
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: "Error Occurred on Server Side",
+          message: error.message
+        });
+      }
+    }
+  );
 router.post(
   "/login",
   [
