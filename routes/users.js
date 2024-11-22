@@ -474,4 +474,33 @@ router.get("/all-users", verifyAdminLogin, async (req, res) => {
     });
   }
 });
+router.get(
+  "/all-users/:userId",
+  verifyAdminLogin,
+  param("userId").isMongoId(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const userId = req.params.userId;
+        const user = await User.findById(userId).select("-password");
+        if (user) {
+          res.status(200).json({ success: true, userData: user });
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "No user found with that id" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
