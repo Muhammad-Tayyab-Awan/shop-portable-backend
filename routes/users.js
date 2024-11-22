@@ -6,6 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const PORT = process.env.PORT || 3000;
 import transporter from "../mailTransporter.js";
 import verifyUserLogin from "../middlewares/verifyUserLogin.js";
+import verifyAdminLogin from "../middlewares/verifyAdminLogin.js";
 import { body, param, validationResult } from "express-validator";
 const router = express.Router();
 router
@@ -457,4 +458,20 @@ router.get(
     }
   }
 );
+router.get("/all-users", verifyAdminLogin, async (req, res) => {
+  try {
+    const allUsers = await User.find().select("-password");
+    if (allUsers.length > 0) {
+      res.status(200).json({ success: true, allUsers: allUsers });
+    } else {
+      res.status(200).json({ success: true, allUsers: 0 });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 export default router;
