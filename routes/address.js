@@ -67,5 +67,27 @@ router
         });
       }
     }
-  );
+  )
+  .get(verifyUserLogin, async (req, res) => {
+    try {
+      const userId = req.userId;
+      const defaultAddress = await Address.findOne({
+        user: userId,
+        isDefault: true
+      });
+      if (defaultAddress) {
+        res.status(200).json({ success: true, defaultAddress: defaultAddress });
+      } else {
+        res
+          .status(400)
+          .json({ success: false, error: "No default address found" });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
 export default router;
