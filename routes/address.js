@@ -1,7 +1,7 @@
 import express from "express";
 import Address from "../models/addresses.js";
 import verifyUserLogin from "../middlewares/verifyUserLogin.js";
-import { body, validationResult } from "express-validator";
+import { body, param, validationResult } from "express-validator";
 import User from "../models/users.js";
 const router = express.Router();
 router
@@ -155,6 +155,34 @@ router
           success: false,
           error: "No addresses found for current user"
         });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
+
+router
+  .route("/all-addresses/:addressId")
+  .get(verifyUserLogin, param("addressId").isMongoId(), async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const userId = req.userId;
+        const addressId = req.params.addressId;
+        const address = await Address.findById(addressId);
+        if (address && address.user.toString() === userId) {
+          res.status(200).json({ success: true, address: address });
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "No address found with that id" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
       }
     } catch (error) {
       res.status(500).json({
