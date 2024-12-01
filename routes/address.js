@@ -118,23 +118,50 @@ router
       });
     }
   });
-router.route("/all-addresses").get(verifyUserLogin, async (req, res) => {
-  try {
-    const userId = req.userId;
-    const allAddresses = await Address.find({ user: userId });
-    if (allAddresses.length > 0) {
-      res.status(200).json({ success: true, allAddresses: allAddresses });
-    } else {
-      res
-        .status(400)
-        .json({ success: false, error: "No addresses found for current user" });
+router
+  .route("/all-addresses")
+  .get(verifyUserLogin, async (req, res) => {
+    try {
+      const userId = req.userId;
+      const allAddresses = await Address.find({ user: userId });
+      if (allAddresses.length > 0) {
+        res.status(200).json({ success: true, allAddresses: allAddresses });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: "No addresses found for current user"
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
     }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: "Error Occurred on Server Side",
-      message: error.message
-    });
-  }
-});
+  })
+  .delete(verifyUserLogin, async (req, res) => {
+    try {
+      const userId = req.userId;
+      const allAddresses = await Address.find({ user: userId });
+      if (allAddresses.length > 0) {
+        await Address.deleteMany({ user: userId });
+        res.status(200).json({
+          success: true,
+          msg: "Deleted all addresses of current user"
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: "No addresses found for current user"
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  });
 export default router;
