@@ -2,6 +2,7 @@ import express from "express";
 import Address from "../models/addresses.js";
 import verifyUserLogin from "../middlewares/verifyUserLogin.js";
 import { body, validationResult } from "express-validator";
+import User from "../models/users.js";
 const router = express.Router();
 router
   .route("/")
@@ -81,6 +82,33 @@ router
         res
           .status(400)
           .json({ success: false, error: "No default address found" });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  })
+  .delete(verifyUserLogin, async (req, res) => {
+    try {
+      const userId = req.userId;
+      const defaultAddress = await Address.findOne({
+        user: userId,
+        isDefault: true
+      });
+      if (defaultAddress) {
+        await Address.findOneAndDelete({ user: userId, isDefault: true });
+        res.status(200).json({
+          success: true,
+          msg: "User's default address deleted successfully"
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: "No default address present for current user"
+        });
       }
     } catch (error) {
       res.status(500).json({
