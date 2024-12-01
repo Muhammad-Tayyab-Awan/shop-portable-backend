@@ -16,7 +16,7 @@ const profileImageSchema = new Schema(
     alt: {
       type: String,
       required: true,
-      default: `profile_image_${uuidv4}`
+      default: `profile_image_${uuidv4()}`
     },
     contentType: {
       type: String,
