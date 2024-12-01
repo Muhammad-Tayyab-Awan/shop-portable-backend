@@ -6,6 +6,7 @@ import connectToDatabase from "./dbConnect.js";
 import productRoute from "./routes/products.js";
 import staffRoute from "./routes/staff.js";
 import staffProfileImageRoute from "./routes/staffProfileImage.js";
+import userProfileImageRoute from "./routes/userProfileImage.js";
 import productsImagesRoute from "./routes/productImages.js";
 import userRoute from "./routes/users.js";
 import addressRoute from "./routes/address.js";
@@ -25,6 +26,7 @@ app.use("/api/products", productRoute);
 app.use("/api/products-images", productsImagesRoute);
 app.use("/api/staff", staffRoute);
 app.use("/api/staff-profile-image", staffProfileImageRoute);
+app.use("/api/user-profile-image", userProfileImageRoute);
 app.use("/api/users", userRoute);
 app.use("/api/address", addressRoute);
 app.get("/", (req, res) => {
