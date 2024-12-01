@@ -191,5 +191,33 @@ router
         message: error.message
       });
     }
+  })
+  .delete(verifyUserLogin, param("addressId").isMongoId(), async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const userId = req.userId;
+        const addressId = req.params.addressId;
+        const address = await Address.findById(addressId);
+        if (address && address.user.toString() === userId) {
+          await Address.findByIdAndDelete(addressId);
+          res
+            .status(200)
+            .json({ success: true, msg: "Address deleted successfully" });
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "No address found with that id" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
   });
 export default router;
