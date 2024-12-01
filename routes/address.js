@@ -219,5 +219,60 @@ router
         message: error.message
       });
     }
-  });
+  })
+  .put(
+    verifyUserLogin,
+    param("addressId"),
+    [
+      body("country")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("state")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("city")
+        .matches(/^[a-zA-Z ]+$/)
+        .optional(),
+      body("postalCode").isPostalCode("any").optional(),
+      body("fullAddress").isString().isLength({ min: 4 }).optional(),
+      body("isDefault").isBoolean().optional()
+    ],
+    async (req, res) => {
+      try {
+        const result = validationResult(req);
+        if (result.isEmpty()) {
+          const userId = req.userId;
+          const addressId = req.params.addressId;
+          const address = await Address.findById(addressId);
+          if (address && address.user.toString() === userId) {
+            const updatedAddress = req.body;
+            if (updatedAddress.isDefault && address.isDefault) {
+              res.status(400).json({
+                success: true,
+                error: "Default address already exists"
+              });
+            } else {
+              await Address.findByIdAndUpdate(addressId, updatedAddress);
+              res.status(200).json({
+                success: true,
+                msg: "User address updated successfully"
+              });
+            }
+          } else {
+            res
+              .status(400)
+              .json({ success: false, error: "No address found with that id" });
+          }
+        } else {
+          res.status(400).json({ success: false, error: result.errors });
+        }
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: "Error Occurred on Server Side",
+          message: error.message
+        });
+      }
+    }
+  );
 export default router;
