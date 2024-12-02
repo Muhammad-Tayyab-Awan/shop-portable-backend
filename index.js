@@ -10,6 +10,7 @@ import userProfileImageRoute from "./routes/userProfileImage.js";
 import productsImagesRoute from "./routes/productImages.js";
 import userRoute from "./routes/users.js";
 import addressRoute from "./routes/address.js";
+import ordersRoute from "./routes/order.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
@@ -29,6 +30,7 @@ app.use("/api/staff-profile-image", staffProfileImageRoute);
 app.use("/api/user-profile-image", userProfileImageRoute);
 app.use("/api/users", userRoute);
 app.use("/api/address", addressRoute);
+app.use("/api/orders", ordersRoute);
 app.get("/", (req, res) => {
   res.send({
     success: true,
