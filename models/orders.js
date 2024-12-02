@@ -3,7 +3,8 @@ const orderSchema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ["In Progress", "Delivered", "Canceled"]
+    enum: ["In Progress", "Delivered", "Canceled"],
+    default: "In Progress"
   },
   totalPrice: {
     type: Number,
@@ -13,7 +14,6 @@ const orderSchema = new Schema({
   deliveryMan: {
     type: Schema.Types.ObjectId,
     ref: "staff",
-    required: true,
     default: undefined
   },
   user: {
