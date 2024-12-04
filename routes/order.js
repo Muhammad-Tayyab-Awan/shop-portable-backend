@@ -14,7 +14,11 @@ router
   .get(verifyUserLogin, async (req, res) => {
     try {
       const userId = req.userId;
-      const allOrders = await Order.find({ user: userId });
+      const allOrders = await Order.find({ user: userId }).populate(
+        "deliveryAddress",
+        ["-_id", "-user", "-__v"],
+        "address"
+      );
       if (allOrders.length > 0) {
         res.status(200).json({ success: true, allOrders: allOrders });
       } else {
