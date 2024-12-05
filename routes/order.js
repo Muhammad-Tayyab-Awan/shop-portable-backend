@@ -5,9 +5,10 @@ import Address from "../models/addresses.js";
 import Product from "../models/products.js";
 import OrderItem from "../models/orderItems.js";
 import verifyUserLogin from "../middlewares/verifyUserLogin.js";
+import verifyAdminLogin from "../middlewares/verifyAdminLogin.js";
 import transporter from "../mailTransporter.js";
 import Staff from "../models/staff.js";
-import { body, validationResult } from "express-validator";
+import { body, param, validationResult } from "express-validator";
 import validator from "validator";
 router
   .route("/")
@@ -150,4 +151,77 @@ router
       }
     }
   );
+router.put(
+  "/assign-order/:orderId",
+  verifyAdminLogin,
+  param("orderId")
+    .isMongoId()
+    .custom(async (orderId) => {
+      const order = await Order.findById(orderId);
+      if (!order) {
+        throw new Error("Order with that id is not present");
+      }
+      if (order.status !== "In Progress") {
+        throw new Error(`Order status is ${order.status}`);
+      }
+      if (order.deliveryMan !== undefined) {
+        throw new Error("Order is already assigned to another delivery man");
+      }
+      return true;
+    }),
+  body("deliveryMan")
+    .isMongoId()
+    .custom(async (deliveryMan) => {
+      const deliveryManStaffMember = await Staff.findById(deliveryMan);
+      if (
+        !deliveryManStaffMember ||
+        deliveryManStaffMember.role !== "deliveryMan" ||
+        deliveryManStaffMember.emailVerified !== true
+      ) {
+        throw new Error("No delivery man with given id exist in your staff");
+      }
+      return true;
+    }),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const orderId = req.params.orderId;
+        const { deliveryMan } = req.body;
+        const deliveryManData = await Staff.findById(deliveryMan);
+        await Order.findByIdAndUpdate(orderId, { deliveryMan: deliveryMan });
+        const htmlMessage = `<h1 style="text-align:center;">Order Assignment</h1><p style="text-align:center;">Dear ${deliveryManData.username}! A new order with id ${orderId} has assigned to you. Visit your dashboard for further info.</p>`;
+        transporter.sendMail(
+          {
+            to: deliveryManData.email,
+            subject: "Order Assignment",
+            html: htmlMessage
+          },
+          (error) => {
+            if (error) {
+              res.status(500).json({
+                success: false,
+                error: "Error Occurred on Server Side",
+                message: error.message
+              });
+            } else {
+              res.status(200).json({
+                success: true,
+                error: `Order is assigned to ${deliveryManData.username}`
+              });
+            }
+          }
+        );
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
