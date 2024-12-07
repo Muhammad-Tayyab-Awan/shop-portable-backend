@@ -27,10 +27,12 @@ const orderSchema = new Schema({
     default: Date.now
   },
   deliveredOn: {
-    type: Date
+    type: Date,
+    default: undefined
   },
   canceledOn: {
-    type: Date
+    type: Date,
+    default: undefined
   },
   deliveryAddress: {
     type: Schema.Types.ObjectId,
