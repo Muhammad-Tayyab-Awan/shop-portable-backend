@@ -263,4 +263,43 @@ router.get(
     }
   }
 );
+
+router.get(
+  "/cancel-user-order/:orderId",
+  verifyAdminLogin,
+  param("orderId").isMongoId(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const orderId = req.params.orderId;
+        const order = await Order.findById(orderId);
+        if (order) {
+          if (order.status === "In Progress") {
+            order.status = "Canceled";
+            await order.save();
+            res
+              .status(200)
+              .json({ success: true, msg: "Your order is canceled now" });
+          } else {
+            res.status(400).json({
+              success: false,
+              error: `Order is already ${order.status.toLowerCase()}`
+            });
+          }
+        } else {
+          res.status(400).json({ success: false, error: "No order found" });
+        }
+      } else {
+        rs.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
