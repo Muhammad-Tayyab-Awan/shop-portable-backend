@@ -18,8 +18,9 @@ async function verifyAdPMLogin(req, res, next) {
         const staffMember = await Staff.findById(response.id);
         if (staffMember) {
           if (
-            staffMember.role === "admin" ||
-            staffMember.role === "productsManager"
+            (staffMember.role === "admin" ||
+              staffMember.role === "productsManager") &&
+            staffMember.emailVerified === true
           ) {
             req.staffId = response.id;
             next();
