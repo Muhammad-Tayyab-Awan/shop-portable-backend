@@ -6,6 +6,7 @@ import Product from "../models/products.js";
 import OrderItem from "../models/orderItems.js";
 import verifyUserLogin from "../middlewares/verifyUserLogin.js";
 import verifyAdminLogin from "../middlewares/verifyAdminLogin.js";
+import verifyAdDMLogin from "../middlewares/verifyAdDMLogin.js";
 import transporter from "../mailTransporter.js";
 import Staff from "../models/staff.js";
 import { body, param, validationResult } from "express-validator";
@@ -306,6 +307,60 @@ router.get(
         }
       } else {
         rs.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
+
+router.get(
+  "/delivered/:orderId",
+  verifyAdDMLogin,
+  param("orderId").isMongoId(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const staffId = req.staffId;
+        const staff = await Staff.findById(staffId);
+        const orderId = req.params.orderId;
+        const order = await Order.findById(orderId);
+        if (order) {
+          if (order.status === "In Progress") {
+            if (
+              (order.deliveryMan !== undefined && staff.role === "admin") ||
+              (order.deliveryMan !== undefined &&
+                staff.role === "deliveryMan" &&
+                order.deliveryMan.toString() === staffId)
+            ) {
+              order.status = "Delivered";
+              order.deliveredOn = Date.now();
+              await order.save();
+              res
+                .status(200)
+                .json({ success: true, msg: "Order is delivered now" });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "You are not authorized to deliver this order"
+              });
+            }
+          } else {
+            res.status(400).json({
+              success: false,
+              error: `Order is already ${order.status.toLowerCase()}`
+            });
+          }
+        } else {
+          res.status(400).json({ success: false, error: "No order found" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
       }
     } catch (error) {
       res.status(500).json({
