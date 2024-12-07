@@ -17,7 +17,10 @@ async function verifyAdminLogin(req, res, next) {
       } else {
         const staffMember = await Staff.findById(response.id);
         if (staffMember) {
-          if (staffMember.role === "admin") {
+          if (
+            staffMember.role === "admin" &&
+            staffMember.emailVerified === true
+          ) {
             req.staffId = response.id;
             next();
           } else {
