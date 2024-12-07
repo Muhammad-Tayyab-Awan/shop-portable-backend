@@ -237,6 +237,13 @@ router.get(
         const order = await Order.findById(orderId);
         if (order && order.user.toString() === userId) {
           if (order.status === "In Progress") {
+            const orderItems = await OrderItem.find({ orderId: orderId });
+            orderItems.forEach(async (orderItem) => {
+              const product = await Product.findById(orderItem.productId);
+              product.sold = product.sold - orderItem.itemCount;
+              await product.save();
+            });
+            order.canceledOn = Date.now();
             order.status = "Canceled";
             await order.save();
             res
@@ -276,6 +283,13 @@ router.get(
         const order = await Order.findById(orderId);
         if (order) {
           if (order.status === "In Progress") {
+            const orderItems = await OrderItem.find({ orderId: orderId });
+            orderItems.forEach(async (orderItem) => {
+              const product = await Product.findById(orderItem.productId);
+              product.sold = product.sold - orderItem.itemCount;
+              await product.save();
+            });
+            order.canceledOn = Date.now();
             order.status = "Canceled";
             await order.save();
             res
