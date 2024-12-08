@@ -371,4 +371,131 @@ router.get(
     }
   }
 );
+
+router.post(
+  "/add-items/:orderId",
+  verifyUserLogin,
+  body("orderItems")
+    .isArray({ min: 1 })
+    .custom((orderItems) => {
+      for (const orderItem of orderItems) {
+        if (!validator.isMongoId(orderItem.productId)) {
+          throw new Error("Invalid MongoDB ID format in productId");
+        }
+        if (typeof orderItem.itemCount !== "number") {
+          throw new Error("Each product must have an itemCount of type number");
+        }
+      }
+      return true;
+    }),
+  param("orderId").isMongoId(),
+  body(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const userId = req.userId,
+          orderId = req.params.orderId;
+        const order = await Order.findById(orderId);
+        if (order && order.user.toString() === userId) {
+          if (
+            order.status === "In Progress" &&
+            order.deliveryMan === undefined
+          ) {
+            const newOrderItems = req.body.orderItems;
+            let orderedItems = 0;
+            for (const orderItem of newOrderItems) {
+              const product = await Product.findById(orderItem.productId);
+              if (product) {
+                const availableCount = product.stock - product.sold;
+                if (
+                  availableCount >= orderItem.itemCount &&
+                  orderItem.itemCount > 0
+                ) {
+                  orderedItems++;
+                }
+              }
+            }
+            if (orderedItems === newOrderItems.length) {
+              const prevOrderedItems = await OrderItem.find({
+                orderId: orderId
+              });
+              const prevOrderedProducts = prevOrderedItems.map(
+                (prevOrderedItem) => {
+                  return prevOrderedItem.productId.toString();
+                }
+              );
+              for (const newOrderItem of newOrderItems) {
+                if (prevOrderedProducts.includes(newOrderItem.productId)) {
+                  const prevOrderItem = await OrderItem.findOne({
+                    orderId: orderId,
+                    productId: newOrderItem.productId
+                  });
+                  const product = await Product.findById(
+                    newOrderItem.productId
+                  );
+                  const newItemPrice =
+                    (prevOrderItem.totalPrice / prevOrderItem.itemCount) *
+                    newOrderItem.itemCount;
+                  prevOrderItem.totalPrice += newItemPrice;
+                  order.totalPrice += newItemPrice;
+                  prevOrderItem.itemCount += newOrderItem.itemCount;
+                  product.sold += newOrderItem.itemCount;
+                  await product.save();
+                  await order.save();
+                  await prevOrderItem.save();
+                } else {
+                  const product = await Product.findById(
+                    newOrderItem.productId
+                  );
+                  newOrderItem.orderId = orderId;
+                  newOrderItem.totalPrice =
+                    (product.price - (product.price * product.discount) / 100) *
+                    newOrderItem.itemCount;
+                  await OrderItem.create(newOrderItem);
+                  product.sold = product.sold + newOrderItem.itemCount;
+                  order.totalPrice += newOrderItem.totalPrice;
+                  await order.save();
+                  await product.save();
+                }
+              }
+              res.status(200).json({
+                success: true,
+                msg: "Order items are added successfully"
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: `Some order items are not available`
+              });
+            }
+          } else if (
+            order.status === "In Progress" &&
+            order.deliveryMan !== undefined
+          ) {
+            res.status(400).json({
+              success: false,
+              error: `Order is already on its way so you can't add or remove items in that order for that purpose create new order`
+            });
+          } else {
+            res.status(400).json({
+              success: false,
+              error: `Order is already ${order.status.toLowerCase()}`
+            });
+          }
+        } else {
+          res.status(400).json({ success: false, error: "No order found" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
