@@ -16,7 +16,7 @@ async function verifyUserLogin(req, res, next) {
         });
       } else {
         const user = await User.findById(response.id);
-        if (user) {
+        if (user && user.emailVerified === true) {
           req.userId = response.id;
           next();
         } else {
