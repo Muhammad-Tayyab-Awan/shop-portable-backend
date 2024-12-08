@@ -498,4 +498,87 @@ router.post(
     }
   }
 );
+
+router.get(
+  "/remove-item/:orderId/:productId",
+  verifyUserLogin,
+  [param("orderId").isMongoId(), param("productId").isMongoId()],
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const userId = req.userId,
+          orderId = req.params.orderId,
+          productId = req.params.productId;
+        const order = await Order.findById(orderId);
+        if (order && order.user.toString() === userId) {
+          if (
+            order.status === "In Progress" &&
+            order.deliveryMan === undefined
+          ) {
+            const orderItems = await OrderItem.find({ orderId: orderId });
+            if (orderItems.length > 1) {
+              const productInOrder = orderItems.map((orderItem) => {
+                return orderItem.productId.toString();
+              });
+              const product = await Product.findById(productId);
+              if (product && productInOrder.includes(productId)) {
+                const orderItem = await OrderItem.findOne({
+                  orderId: orderId,
+                  productId: productId
+                });
+                order.totalPrice -= orderItem.totalPrice;
+                product.sold -= orderItem.itemCount;
+                await order.save();
+                await product.save();
+                await orderItem.deleteOne();
+                res.status(200).json({
+                  success: true,
+                  msg: "Order item is removed successfully"
+                });
+              } else if (product && !productInOrder.includes(productId)) {
+                res.status(400).json({
+                  success: false,
+                  error: "This product is not in your order"
+                });
+              } else {
+                res
+                  .status(400)
+                  .json({ success: false, error: "No product found" });
+              }
+            } else {
+              res.status(400).json({
+                success: false,
+                error: `You can't remove this item because you have only one item in your order`
+              });
+            }
+          } else if (
+            order.status === "In Progress" &&
+            order.deliveryMan !== undefined
+          ) {
+            res.status(400).json({
+              success: false,
+              error: `Order is already on its way so you can't add or remove items in that order for that purpose create new order`
+            });
+          } else {
+            res.status(400).json({
+              success: false,
+              error: `Order is already ${order.status.toLowerCase()}`
+            });
+          }
+        } else {
+          res.status(400).json({ success: false, error: "No order found" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
