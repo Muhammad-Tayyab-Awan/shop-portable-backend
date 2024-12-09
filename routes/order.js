@@ -604,4 +604,27 @@ router.get("/canceled-orders", verifyUserLogin, async (req, res) => {
     });
   }
 });
+
+router.get("/delivered-orders", verifyUserLogin, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const orders = await Order.find({
+      user: userId,
+      status: "Delivered"
+    }).populate("deliveryAddress", ["-_id", "-user", "-__v"], "address");
+    if (orders.length > 0) {
+      res.status(200).json({ success: true, deliveredOrders: orders });
+    } else {
+      res
+        .status(400)
+        .json({ success: false, error: "No delivered order found" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 export default router;
