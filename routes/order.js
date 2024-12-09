@@ -653,4 +653,30 @@ router.get("/on-way-orders", verifyUserLogin, async (req, res) => {
     });
   }
 });
+
+router.get("/pending-orders", verifyUserLogin, async (req, res) => {
+  try {
+    const userId = req.userId;
+    let orders = await Order.find({
+      user: userId,
+      status: "In Progress"
+    }).populate("deliveryAddress", ["-_id", "-user", "-__v"], "address");
+    orders = orders.filter((order) => {
+      return !order.deliveryMan;
+    });
+    if (orders.length > 0) {
+      res.status(200).json({ success: true, pendingOrders: orders });
+    } else {
+      res
+        .status(400)
+        .json({ success: false, error: "No orders are pending" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
 export default router;
