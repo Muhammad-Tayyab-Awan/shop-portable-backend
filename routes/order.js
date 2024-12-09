@@ -9,7 +9,7 @@ import verifyAdminLogin from "../middlewares/verifyAdminLogin.js";
 import verifyAdDMLogin from "../middlewares/verifyAdDMLogin.js";
 import transporter from "../mailTransporter.js";
 import Staff from "../models/staff.js";
-import { body, param, validationResult } from "express-validator";
+import { body, param, query, validationResult } from "express-validator";
 import validator from "validator";
 router
   .route("/")
@@ -667,9 +667,7 @@ router.get("/pending-orders", verifyUserLogin, async (req, res) => {
     if (orders.length > 0) {
       res.status(200).json({ success: true, pendingOrders: orders });
     } else {
-      res
-        .status(400)
-        .json({ success: false, error: "No orders are pending" });
+      res.status(400).json({ success: false, error: "No orders are pending" });
     }
   } catch (error) {
     res.status(500).json({
@@ -679,4 +677,102 @@ router.get("/pending-orders", verifyUserLogin, async (req, res) => {
     });
   }
 });
+
+router.get(
+  "/all-orders",
+  verifyAdminLogin,
+  query("status")
+    .isIn(["canceled", "delivered", "pending", "on-way"])
+    .optional(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const query = req.query;
+        if (Object.keys(query).length === 0) {
+          const allOrders = await Order.find()
+            .populate("deliveryAddress", ["-__v", "-user"], "address")
+            .populate("user", ["-__v", "-password"], "user");
+          if (allOrders.length > 0) {
+            res.status(200).json({ success: true, allOrders: allOrders });
+          } else {
+            res.status(400).json({ success: false, error: "No orders found" });
+          }
+        } else {
+          if (query.status === "canceled") {
+            const canceledOrders = await Order.find({ status: "Canceled" })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user");
+            if (canceledOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                canceledOrders: canceledOrders
+              });
+            } else {
+              res
+                .status(400)
+                .json({ success: false, error: "No canceled orders found" });
+            }
+          } else if (query.status === "delivered") {
+            const deliveredOrders = await Order.find({ status: "Delivered" })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user");
+            if (deliveredOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                deliveredOrders: deliveredOrders
+              });
+            } else {
+              res
+                .status(400)
+                .json({ success: false, error: "No delivered orders found" });
+            }
+          } else if (query.status === "pending") {
+            let pendingOrders = await Order.find({ status: "In Progress" })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user");
+            pendingOrders = pendingOrders.filter((order) => {
+              return !order.deliveryMan;
+            });
+            if (pendingOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                pendingOrders: pendingOrders
+              });
+            } else {
+              res
+                .status(400)
+                .json({ success: false, error: "No pending orders found" });
+            }
+          } else {
+            let onWayOrders = await Order.find({ status: "In Progress" })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user");
+            onWayOrders = onWayOrders.filter((order) => {
+              return order.deliveryMan;
+            });
+            if (onWayOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                onWayOrders: onWayOrders
+              });
+            } else {
+              res
+                .status(400)
+                .json({ success: false, error: "No orders are on their way" });
+            }
+          }
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
