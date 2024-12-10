@@ -700,7 +700,7 @@ router.get(
           } else {
             res.status(400).json({ success: false, error: "No orders found" });
           }
-        } else {
+        } else if (Object.keys(query).length === 1 && query.status !== undefined) {
           if (query.status === "canceled") {
             const canceledOrders = await Order.find({ status: "Canceled" })
               .populate("deliveryAddress", ["-__v", "-user"], "address")
@@ -767,6 +767,8 @@ router.get(
                 .json({ success: false, error: "No orders are on their way" });
             }
           }
+        } else {
+          res.status(400).json({success:false,error:"Invalid query parameter"})
         }
       } else {
         res.status(400).json({ success: false, error: result.errors });
@@ -817,7 +819,10 @@ router.get(
               .status(400)
               .json({ success: false, error: "No orders found for that user" });
           }
-        } else {
+        } else if (
+          Object.keys(query).length === 1 &&
+          query.status !== undefined
+        ) {
           if (query.status === "canceled") {
             const canceledOrders = await Order.find({
               status: "Canceled",
@@ -900,6 +905,8 @@ router.get(
               });
             }
           }
+        } else {
+          res.status(400).json({ success: false, error: "Invalid query parameters" });
         }
       } else {
         res.status(400).json({ success: false, error: result.errors });
