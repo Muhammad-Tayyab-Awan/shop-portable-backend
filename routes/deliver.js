@@ -23,6 +23,31 @@ router.get("/", verifyDMLogin, async (req, res) => {
   }
 });
 
+router.get("/canceled-orders", verifyDMLogin, async (req, res) => {
+  try {
+    const deliveryManId = req.staffId;
+    const canceledOrders = await Order.find({
+      status: "Canceled",
+      deliveryMan: deliveryManId
+    })
+      .populate("deliveryAddress", ["-__v"], "address")
+      .populate("user", ["-__v", "-password"]);
+    if (canceledOrders.length > 0) {
+      res.status(200).json({ success: true, canceledOrders });
+    } else {
+      res
+        .status(400)
+        .json({ success: false, error: "No canceled orders found" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
+
 router.get(
   "/:orderId",
   param("orderId").isMongoId(),
