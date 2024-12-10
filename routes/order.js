@@ -692,7 +692,8 @@ router.get(
         if (Object.keys(query).length === 0) {
           const allOrders = await Order.find()
             .populate("deliveryAddress", ["-__v", "-user"], "address")
-            .populate("user", ["-__v", "-password"], "user");
+            .populate("user", ["-__v", "-password"], "user")
+            .populate("deliveryMan", ["-__v", "-password"], "staff");
           if (allOrders.length > 0) {
             res.status(200).json({ success: true, allOrders: allOrders });
           } else {
@@ -702,7 +703,8 @@ router.get(
           if (query.status === "canceled") {
             const canceledOrders = await Order.find({ status: "Canceled" })
               .populate("deliveryAddress", ["-__v", "-user"], "address")
-              .populate("user", ["-__v", "-password"], "user");
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
             if (canceledOrders.length > 0) {
               res.status(200).json({
                 success: true,
@@ -716,7 +718,8 @@ router.get(
           } else if (query.status === "delivered") {
             const deliveredOrders = await Order.find({ status: "Delivered" })
               .populate("deliveryAddress", ["-__v", "-user"], "address")
-              .populate("user", ["-__v", "-password"], "user");
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
             if (deliveredOrders.length > 0) {
               res.status(200).json({
                 success: true,
@@ -747,7 +750,8 @@ router.get(
           } else {
             let onWayOrders = await Order.find({ status: "In Progress" })
               .populate("deliveryAddress", ["-__v", "-user"], "address")
-              .populate("user", ["-__v", "-password"], "user");
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
             onWayOrders = onWayOrders.filter((order) => {
               return order.deliveryMan;
             });
