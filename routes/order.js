@@ -913,4 +913,122 @@ router.get(
     }
   }
 );
+
+router.get(
+  "/all-assigned-orders/:deliveryManId",
+  param("deliveryManId")
+    .isMongoId()
+    .custom(async (deliveryManId) => {
+      const deliveryMan = await Staff.findById(deliveryManId);
+      if (!deliveryMan) {
+        throw new Error("Delivery Man with that id is not present");
+      }
+      if (deliveryMan.emailVerified !== true) {
+        throw new Error("Delivery Man with that id is not present");
+      }
+      if (deliveryMan.role !== "deliveryMan") {
+        throw new Error("Delivery Man with that id is not present");
+      }
+      return true;
+    }),
+  query("status").isIn(["to-deliver", "canceled", "delivered"]).optional(),
+  verifyAdminLogin,
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const deliveryManId = req.params.deliveryManId;
+        const query = req.query;
+        if (Object.keys(query).length === 0) {
+          const allOrders = await Order.find({ deliveryMan: deliveryManId })
+            .populate("deliveryAddress", ["-__v", "-user"], "address")
+            .populate("user", ["-__v", "-password"], "user")
+            .populate("deliveryMan", ["-__v", "-password"], "staff");
+          if (allOrders.length > 0) {
+            res.status(200).json({ success: true, allOrders: allOrders });
+          } else {
+            res.status(400).json({
+              success: false,
+              error: "No orders are assigned to that delivery man yet"
+            });
+          }
+        } else if (
+          Object.keys(query).length === 1 &&
+          query.status !== undefined
+        ) {
+          if (query.status === "to-deliver") {
+            const toDeliverOrders = await Order.find({
+              status: "In Progress",
+              deliveryMan: deliveryManId
+            })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
+            if (toDeliverOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                toDeliverOrders: toDeliverOrders
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No orders are assigned to that delivery man yet"
+              });
+            }
+          } else if (query.status === "delivered") {
+            const deliveredOrders = await Order.find({
+              status: "Delivered",
+              deliveryMan: deliveryManId
+            })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
+            if (deliveredOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                deliveredOrders: deliveredOrders
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No delivered orders found for that delivery man"
+              });
+            }
+          } else {
+            const canceledOrders = await Order.find({
+              status: "Canceled",
+              deliveryMan: deliveryManId
+            })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
+            if (canceledOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                canceledOrders: canceledOrders
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No canceled orders found for that delivery man"
+              });
+            }
+          }
+        } else {
+          res
+            .status(400)
+            .json({ success: false, error: "Invalid query parameters" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
