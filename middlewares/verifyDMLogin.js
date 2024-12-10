@@ -1,7 +1,7 @@
 import JWT from "jsonwebtoken";
 import Staff from "../models/staff.js";
 const JWT_SECRET = process.env.JWT_SECRET;
-async function verifyAdminLogin(req, res, next) {
+async function verifyDMLogin(req, res, next) {
   let token = req.header("auth-token");
   if (!token) {
     res
@@ -35,4 +35,4 @@ async function verifyAdminLogin(req, res, next) {
     });
   }
 }
-export default verifyAdminLogin;
+export default verifyDMLogin;
