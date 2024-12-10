@@ -9,6 +9,7 @@ import verifyAdminLogin from "../middlewares/verifyAdminLogin.js";
 import verifyAdDMLogin from "../middlewares/verifyAdDMLogin.js";
 import transporter from "../mailTransporter.js";
 import Staff from "../models/staff.js";
+import User from "../models/users.js";
 import { body, param, query, validationResult } from "express-validator";
 import validator from "validator";
 router
@@ -764,6 +765,139 @@ router.get(
               res
                 .status(400)
                 .json({ success: false, error: "No orders are on their way" });
+            }
+          }
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
+
+router.get(
+  "/all-orders/:userId",
+  verifyAdminLogin,
+  param("userId")
+    .isMongoId()
+    .custom(async (userId) => {
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error("User with that id is not present");
+      }
+      if (user.emailVerified !== true) {
+        throw new Error("User with that id is not present");
+      }
+      return true;
+    }),
+  query("status")
+    .isIn(["canceled", "delivered", "pending", "on-way"])
+    .optional(),
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const userId = req.params.userId;
+        const query = req.query;
+        if (Object.keys(query).length === 0) {
+          const allOrders = await Order.find({ user: userId })
+            .populate("deliveryAddress", ["-__v", "-user"], "address")
+            .populate("user", ["-__v", "-password"], "user")
+            .populate("deliveryMan", ["-__v", "-password"], "staff");
+          if (allOrders.length > 0) {
+            res.status(200).json({ success: true, allOrders: allOrders });
+          } else {
+            res
+              .status(400)
+              .json({ success: false, error: "No orders found for that user" });
+          }
+        } else {
+          if (query.status === "canceled") {
+            const canceledOrders = await Order.find({
+              status: "Canceled",
+              user: userId
+            })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
+            if (canceledOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                canceledOrders: canceledOrders
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No canceled orders found for that user"
+              });
+            }
+          } else if (query.status === "delivered") {
+            const deliveredOrders = await Order.find({
+              status: "Delivered",
+              user: userId
+            })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
+            if (deliveredOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                deliveredOrders: deliveredOrders
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No delivered orders found for that user"
+              });
+            }
+          } else if (query.status === "pending") {
+            let pendingOrders = await Order.find({
+              status: "In Progress",
+              user: userId
+            })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user");
+            pendingOrders = pendingOrders.filter((order) => {
+              return !order.deliveryMan;
+            });
+            if (pendingOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                pendingOrders: pendingOrders
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No pending orders found for that user"
+              });
+            }
+          } else {
+            let onWayOrders = await Order.find({
+              status: "In Progress",
+              user: userId
+            })
+              .populate("deliveryAddress", ["-__v", "-user"], "address")
+              .populate("user", ["-__v", "-password"], "user")
+              .populate("deliveryMan", ["-__v", "-password"], "staff");
+            onWayOrders = onWayOrders.filter((order) => {
+              return order.deliveryMan;
+            });
+            if (onWayOrders.length > 0) {
+              res.status(200).json({
+                success: true,
+                onWayOrders: onWayOrders
+              });
+            } else {
+              res.status(400).json({
+                success: false,
+                error: "No orders of that user are on their way"
+              });
             }
           }
         }
