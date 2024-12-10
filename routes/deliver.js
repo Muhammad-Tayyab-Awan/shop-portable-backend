@@ -22,4 +22,38 @@ router.get("/", verifyDMLogin, async (req, res) => {
     });
   }
 });
+
+router.get(
+  "/:orderId",
+  param("orderId").isMongoId(),
+  verifyDMLogin,
+  async (req, res) => {
+    try {
+      const result = validationResult(req);
+      if (result.isEmpty()) {
+        const deliveryManId = req.staffId;
+        const orderId = req.params.orderId;
+        const order = await Order.findOne({
+          _id: orderId,
+          deliveryMan: deliveryManId
+        })
+          .populate("deliveryAddress", ["-__v"], "address")
+          .populate("user", ["-__v", "-password"]);
+        if (order) {
+          res.status(200).json({ success: true, order });
+        } else {
+          res.status(400).json({ success: false, error: "No order is found" });
+        }
+      } else {
+        res.status(400).json({ success: false, error: result.errors });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: "Error Occurred on Server Side",
+        message: error.message
+      });
+    }
+  }
+);
 export default router;
