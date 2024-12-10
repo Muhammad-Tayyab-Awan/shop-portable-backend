@@ -73,6 +73,31 @@ router.get("/completed-orders", verifyDMLogin, async (req, res) => {
   }
 });
 
+router.get("/pending-orders", verifyDMLogin, async (req, res) => {
+  try {
+    const deliveryManId = req.staffId;
+    const pendingOrders = await Order.find({
+      status: "In Progress",
+      deliveryMan: deliveryManId
+    })
+      .populate("deliveryAddress", ["-__v"], "address")
+      .populate("user", ["-__v", "-password"]);
+    if (pendingOrders.length > 0) {
+      res.status(200).json({ success: true, pendingOrders: pendingOrders });
+    } else {
+      res
+        .status(400)
+        .json({ success: false, error: "No pending orders found" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Error Occurred on Server Side",
+      message: error.message
+    });
+  }
+});
+
 router.get(
   "/:orderId",
   param("orderId").isMongoId(),
