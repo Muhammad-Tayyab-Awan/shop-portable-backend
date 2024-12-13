@@ -285,7 +285,15 @@ const logInUser = async (req, res) => {
                 } else {
                   res.status(400).json({
                     success: false,
-                    error: `We have sent verification email to ${logInUser.email},Check your mailbox and verify your email`
+                    error: `We have sent verification email to ${
+                      logInUser.email.split("@")[0].charAt(0) +
+                      "********" +
+                      logInUser.email
+                        .split("@")[0]
+                        .at(logInUser.email.split("@")[0].length - 1) +
+                      "@" +
+                      logInUser.email.split("@")[1]
+                    },Check your mailbox and verify your email`
                   });
                 }
               }
