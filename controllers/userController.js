@@ -294,12 +294,12 @@ const logInUser = async (req, res) => {
         } else {
           res
             .status(400)
-            .json({ success: false, error: "Invalid log in credentials2" });
+            .json({ success: false, error: "Invalid log in credentials" });
         }
       } else {
         res
           .status(400)
-          .json({ success: false, error: "Invalid log in credentials1" });
+          .json({ success: false, error: "Invalid log in credentials" });
       }
     } else {
       res.status(400).json({ success: false, error: result.errors });
