@@ -3,7 +3,7 @@ import { validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
 import JWT from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET;
-const PORT = process.env.PORT || 3000;
+const API_URL = process.env.API_URL;
 import transporter from "../mailTransporter.js";
 const staffLogin = async (req, res) => {
   try {
@@ -27,7 +27,7 @@ const staffLogin = async (req, res) => {
               { id: staffMember.id },
               JWT_SECRET
             );
-            const htmlMessage = `<h3 style="text-align:center;width:100%;">Verify Your Email</h3><p style="text-align:center;width:100%;">Visit this link to verify your email <a href="http://localhost:${PORT}/api/staff/verify-email/${verificationToken}">http://localhost:${PORT}/api/staff/verify-email/${verificationToken}</a></p>`;
+            const htmlMessage = `<h3 style="text-align:center;width:100%;">Verify Your Email</h3><p style="text-align:center;width:100%;">Visit this link to verify your email <a href="${API_URL}/api/staff/verify-email/${verificationToken}">${API_URL}/api/staff/verify-email/${verificationToken}</a></p>`;
             transporter.sendMail(
               {
                 to: staffMember.email,
@@ -197,7 +197,7 @@ const deleteAccountRequestForLoggedInUser = async (req, res) => {
     const staffMember = await Staff.findById(req.staffId).select("-password");
     if (staffMember) {
       const deletionToken = JWT.sign({ id: staffMember.id }, JWT_SECRET);
-      const htmlMessage = `<h1 style="text-align:center;width:100%">Account Deletion</h1><p style="text-align:center;width:100%">Dear ${staffMember.firstName}&nbsp;${staffMember.lastName}, Do You really want to delete your account permanently?</p><p style="text-align:center;"><a href="http://localhost:${PORT}/api/staff/confirm-delete/${deletionToken}" style="background-color:#f00;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">Yes</a>&nbsp;&nbsp;<a href="http://localhost:${PORT}/api/staff/cancel-delete/${deletionToken}" style="background-color:#0f0;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">No</a></p>`;
+      const htmlMessage = `<h1 style="text-align:center;width:100%">Account Deletion</h1><p style="text-align:center;width:100%">Dear ${staffMember.firstName}&nbsp;${staffMember.lastName}, Do You really want to delete your account permanently?</p><p style="text-align:center;"><a href="${API_URL}/api/staff/confirm-delete/${deletionToken}" style="background-color:#f00;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">Yes</a>&nbsp;&nbsp;<a href="${API_URL}/api/staff/cancel-delete/${deletionToken}" style="background-color:#0f0;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">No</a></p>`;
       transporter.sendMail(
         {
           to: staffMember.email,

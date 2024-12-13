@@ -2,7 +2,7 @@ import User from "../models/users.js";
 import bcrypt from "bcryptjs";
 import JWT from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET;
-const PORT = process.env.PORT || 3000;
+const API_URL = process.env.API_URL;
 import transporter from "../mailTransporter.js";
 import { validationResult } from "express-validator";
 const createUserAccount = async (req, res) => {
@@ -143,7 +143,7 @@ const deleteRequestLoggedInUser = async (req, res) => {
     const userId = req.userId;
     const user = await User.findById(userId).select("-password");
     const deletionToken = JWT.sign({ id: userId }, JWT_SECRET);
-    const htmlMessage = `<h1 style="text-align:center;width:100%">Account Deletion</h1><p style="text-align:center;width:100%">Dear ${user.firstName}&nbsp;${user.lastName}, Do You really want to delete your account permanently?</p><p style="text-align:center;"><a href="http://localhost:${PORT}/api/users/confirm-delete/${deletionToken}" style="background-color:#f00;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">Yes</a>&nbsp;&nbsp;<a href="http://localhost:${PORT}/api/users/cancel-delete/${deletionToken}" style="background-color:#0f0;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">No</a></p>`;
+    const htmlMessage = `<h1 style="text-align:center;width:100%">Account Deletion</h1><p style="text-align:center;width:100%">Dear ${user.firstName}&nbsp;${user.lastName}, Do You really want to delete your account permanently?</p><p style="text-align:center;"><a href="${API_URL}/api/users/confirm-delete/${deletionToken}" style="background-color:#f00;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">Yes</a>&nbsp;&nbsp;<a href="${API_URL}/api/users/cancel-delete/${deletionToken}" style="background-color:#0f0;color:white;font-weight:bold;text-decoration:none;text-align:center;padding: 3px 10px;border-radius:5px;">No</a></p>`;
     transporter.sendMail(
       {
         to: user.email,
@@ -268,7 +268,7 @@ const logInUser = async (req, res) => {
               { id: logInUser.id },
               JWT_SECRET
             );
-            const htmlMessage = `<h3 style="text-align:center;width:100%;">Verify Your Email</h3><p style="text-align:center;width:100%;">Visit this link to verify your email <a href="http://localhost:${PORT}/api/users/verify-email/${verificationToken}">http://localhost:${PORT}/api/users/verify-email/${verificationToken}</a></p>`;
+            const htmlMessage = `<h3 style="text-align:center;width:100%;">Verify Your Email</h3><p style="text-align:center;width:100%;">Visit this link to verify your email <a href="${API_URL}/api/users/verify-email/${verificationToken}">${API_URL}/api/users/verify-email/${verificationToken}</a></p>`;
             transporter.sendMail(
               {
                 to: logInUser.email,
