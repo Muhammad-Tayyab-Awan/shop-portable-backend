@@ -45,7 +45,7 @@ app.get("/", (req, res) => {
 app.all("*", (req, res) => {
   res.status(404).json({ success: false, msg: `Requested Service Not Found` });
 });
-app.listen(PORT, (err) => {
+const server = app.listen(PORT, (err) => {
   console.clear();
   connectToDatabase()
     .then((res) => {
@@ -56,6 +56,10 @@ app.listen(PORT, (err) => {
     });
   console.log({
     success: true,
-    msg: `App running on http://localhost:${PORT}}`
+    msg: `App running on ${
+      server.address().address === "::"
+        ? "http://localhost:" + server.address().port
+        : "https://" + server.address().address + server.address().port
+    }`
   });
 });
