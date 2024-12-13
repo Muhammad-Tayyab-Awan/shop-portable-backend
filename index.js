@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 import connectToDatabase from "./dbConnect.js";
 import productRoute from "./routes/products.js";
 import staffRoute from "./routes/staff.js";
@@ -15,11 +16,12 @@ import deliverRoute from "./routes/deliver.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
-  origin: "*",
+  origin: "http://localhost:5173",
   credentials: true,
   optionSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.raw());
