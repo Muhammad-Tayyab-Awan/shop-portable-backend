@@ -283,8 +283,8 @@ const logInUser = async (req, res) => {
                     message: error.message
                   });
                 } else {
-                  res.status(200).json({
-                    success: true,
+                  res.status(400).json({
+                    success: false,
                     error: `We have sent verification email to ${logInUser.email},Check your mailbox and verify your email`
                   });
                 }
