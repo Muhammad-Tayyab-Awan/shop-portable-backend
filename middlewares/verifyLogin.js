@@ -1,7 +1,7 @@
 import JWT from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET;
 async function verifyLogin(req, res, next) {
-  let token = req.header("auth-token");
+  let token = req.header("auth-token") || req.cookies["auth-token"];
   if (!token) {
     res
       .status(401)

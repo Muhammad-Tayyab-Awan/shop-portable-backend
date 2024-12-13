@@ -2,7 +2,7 @@ import JWT from "jsonwebtoken";
 import Staff from "../models/staff.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 async function verifyDMLogin(req, res, next) {
-  let token = req.header("auth-token");
+  let token = req.header("auth-token") || req.cookies["auth-token"];
   if (!token) {
     res
       .status(401)
