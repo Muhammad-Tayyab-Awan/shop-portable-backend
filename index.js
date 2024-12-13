@@ -38,7 +38,12 @@ app.get("/", (req, res) => {
     success: true,
     msg: {
       1: "Welcome to ShopPortable.com",
-      2: "Visit: https://github.com/Muhammad-Tayyab-Awan/shop-portable-backend/blob/main/README.md"
+      2: "Visit: https://github.com/Muhammad-Tayyab-Awan/shop-portable-backend/blob/main/README.md",
+      3: `${
+        server.address().address === "::"
+          ? "http://localhost:" + server.address().port
+          : "https://" + server.address().address + server.address().port
+      }`
     }
   });
 });
