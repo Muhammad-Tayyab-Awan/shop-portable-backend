@@ -118,7 +118,7 @@ const deleteLoggedInUserProfileImage = async (req, res) => {
         user: userId
       });
       res.status(200).json({
-        success: false,
+        success: true,
         msg: "Profile image deleted successfully"
       });
     } else {
