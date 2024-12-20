@@ -39,7 +39,6 @@ router.get(
         });
       }
     } catch (error) {
-      console.log(error);
       res.status(500).json({
         success: false,
         error: "Error Occurred on Server Side",
