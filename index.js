@@ -14,6 +14,7 @@ import addressRoute from "./routes/address.js";
 import ordersRoute from "./routes/order.js";
 import deliverRoute from "./routes/deliver.js";
 import orderItemsRoute from "./routes/orderitems.js";
+import cartRoute from "./routes/cart.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 const corsOptions = {
@@ -37,6 +38,7 @@ app.use("/api/address", addressRoute);
 app.use("/api/orders", ordersRoute);
 app.use("/api/delivery-man", deliverRoute);
 app.use("/api/order-items", orderItemsRoute);
+app.use("/api/cart", cartRoute);
 app.get("/", (req, res) => {
   res.send({
     success: true,
